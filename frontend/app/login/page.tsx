@@ -79,7 +79,7 @@ export default function Login() {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-2">
-              Welcome back
+              Welcome Back
             </h1>
             <p className="text-gray-300 text-sm">
               Sign in to your account to continue
