@@ -150,7 +150,7 @@ export default function Login() {
                   className="w-4 h-4 rounded border-white/20 bg-white/10 text-[#4A6FA5] focus:ring-[#4A6FA5]/50"
                 />
                 <label htmlFor="remember" className="text-sm text-gray-300">
-                  Remember me
+                  Remember Me
                 </label>
               </div>
             </div>
