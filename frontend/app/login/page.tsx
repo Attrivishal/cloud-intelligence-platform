@@ -241,6 +241,7 @@ export default function Login() {
         <Link href="/contact" className="hover:text-[#5B7AB5] transition">Contact</Link>
       </div>
 
+      
       {/* Animation Keyframes */}
       <style jsx>{`
         @keyframes pulse {
