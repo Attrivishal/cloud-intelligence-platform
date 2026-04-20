@@ -79,7 +79,7 @@ export default function Login() {
           {/* Header */}
           <div className="text-center mb-8">
             <h1 className="text-2xl md:text-3xl font-bold text-white tracking-tight mb-2">
-              Welcome back
+              Welcome Back
             </h1>
             <p className="text-gray-300 text-sm">
               Sign in to your account to continue
@@ -150,7 +150,7 @@ export default function Login() {
                   className="w-4 h-4 rounded border-white/20 bg-white/10 text-[#4A6FA5] focus:ring-[#4A6FA5]/50"
                 />
                 <label htmlFor="remember" className="text-sm text-gray-300">
-                  Remember me
+                  Remember Me
                 </label>
               </div>
             </div>
@@ -241,6 +241,7 @@ export default function Login() {
         <Link href="/contact" className="hover:text-[#5B7AB5] transition">Contact</Link>
       </div>
 
+      
       {/* Animation Keyframes */}
       <style jsx>{`
         @keyframes pulse {
