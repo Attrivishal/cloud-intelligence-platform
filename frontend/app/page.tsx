@@ -1,13 +1,255 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import Link from "next/link";
+import { motion, AnimatePresence, useScroll, useTransform, useInView, MotionValue } from "framer-motion";
+import {
+  BarChart3,
+  ShieldCheck,
+  Zap,
+  TrendingUp,
+  Cpu,
+  Globe,
+  CheckCircle2,
+  Menu,
+  X,
+  ArrowRight,
+  ExternalLink,
+  ChevronRight,
+  Cloud,
+  PieChart,
+  Target,
+  Sparkles,
+  Search,
+  Users,
+  LayoutDashboard,
+  LucideIcon,
+  Activity,
+  DollarSign,
+  Clock,
+  Award,
+  Star,
+  ArrowUpRight,
+  Play,
+  Pause,
+  Maximize2
+} from "lucide-react";
+
+// Custom hook for mouse parallax
+const useMouseParallax = () => {
+  const [mousePosition, setMousePosition] = useState({ x: 0, y: 0 });
+
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      setMousePosition({
+        x: (e.clientX / window.innerWidth - 0.5) * 20,
+        y: (e.clientY / window.innerHeight - 0.5) * 20,
+      });
+    };
+    window.addEventListener('mousemove', handleMouseMove);
+    return () => window.removeEventListener('mousemove', handleMouseMove);
+  }, []);
+
+  return mousePosition;
+};
+
+// Custom cursor component
+const CustomCursor = () => {
+  const [position, setPosition] = useState({ x: 0, y: 0 });
+  const [isHovering, setIsHovering] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
+
+  useEffect(() => {
+    const moveCursor = (e: MouseEvent) => {
+      setPosition({ x: e.clientX, y: e.clientY });
+      if (!isVisible) setIsVisible(true);
+    };
+
+    const handleMouseLeave = () => setIsVisible(false);
+    const handleMouseEnter = () => setIsVisible(true);
+
+    const hoverElements = document.querySelectorAll('button, a, .hoverable');
+    const handleMouseEnterHover = () => setIsHovering(true);
+    const handleMouseLeaveHover = () => setIsHovering(false);
+
+    window.addEventListener('mousemove', moveCursor);
+    document.body.addEventListener('mouseleave', handleMouseLeave);
+    document.body.addEventListener('mouseenter', handleMouseEnter);
+
+    hoverElements.forEach(el => {
+      el.addEventListener('mouseenter', handleMouseEnterHover);
+      el.addEventListener('mouseleave', handleMouseLeaveHover);
+    });
+
+    return () => {
+      window.removeEventListener('mousemove', moveCursor);
+      document.body.removeEventListener('mouseleave', handleMouseLeave);
+      document.body.removeEventListener('mouseenter', handleMouseEnter);
+      hoverElements.forEach(el => {
+        el.removeEventListener('mouseenter', handleMouseEnterHover);
+        el.removeEventListener('mouseleave', handleMouseLeaveHover);
+      });
+    };
+  }, [isVisible]);
+
+  if (typeof window === 'undefined') return null;
+
+  return (
+    <motion.div
+      className="fixed top-0 left-0 pointer-events-none z-[9999] hidden lg:block"
+      animate={{
+        x: position.x - 12,
+        y: position.y - 12,
+        scale: isHovering ? 1.5 : 1,
+        opacity: isVisible ? 1 : 0,
+      }}
+      transition={{
+        type: "spring",
+        stiffness: 500,
+        damping: 28,
+        mass: 0.5,
+      }}
+    >
+      <div className={`w-6 h-6 rounded-full border-2 border-[#5B7AB5] transition-all duration-300 ${isHovering ? 'bg-[#5B7AB5]/20 scale-150' : ''
+        }`} />
+    </motion.div>
+  );
+};
+
+// Animated number counter
+const AnimatedCounter = ({ value, suffix = "" }: { value: string; suffix?: string }) => {
+  const [count, setCount] = useState(0);
+  const ref = useRef(null);
+  const isInView = useInView(ref, { once: true, amount: 0.5 });
+
+  useEffect(() => {
+    if (isInView) {
+      const numericValue = parseInt(value);
+      let start = 0;
+      const duration = 2000;
+      const increment = numericValue / (duration / 16);
+
+      const timer = setInterval(() => {
+        start += increment;
+        if (start >= numericValue) {
+          setCount(numericValue);
+          clearInterval(timer);
+        } else {
+          setCount(Math.floor(start));
+        }
+      }, 16);
+
+      return () => clearInterval(timer);
+    }
+  }, [isInView, value]);
+
+  return (
+    <span ref={ref}>
+      {count}{suffix}
+    </span>
+  );
+};
+
+// Particle background component
+const ParticleBackground = () => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+
+    const particles: Array<{
+      x: number;
+      y: number;
+      radius: number;
+      alpha: number;
+      velocity: { x: number; y: number };
+    }> = [];
+
+    for (let i = 0; i < 100; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        radius: Math.random() * 2,
+        alpha: Math.random() * 0.5,
+        velocity: {
+          x: (Math.random() - 0.5) * 0.5,
+          y: (Math.random() - 0.5) * 0.5,
+        },
+      });
+    }
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+      particles.forEach(particle => {
+        particle.x += particle.velocity.x;
+        particle.y += particle.velocity.y;
+
+        if (particle.x < 0) particle.x = canvas.width;
+        if (particle.x > canvas.width) particle.x = 0;
+        if (particle.y < 0) particle.y = canvas.height;
+        if (particle.y > canvas.height) particle.y = 0;
+
+        ctx.beginPath();
+        ctx.arc(particle.x, particle.y, particle.radius, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(91, 122, 181, ${particle.alpha})`;
+        ctx.fill();
+      });
+
+      requestAnimationFrame(animate);
+    };
+
+    animate();
+
+    const handleResize = () => {
+      canvas.width = window.innerWidth;
+      canvas.height = window.innerHeight;
+    };
+
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  return <canvas ref={canvasRef} className="fixed inset-0 pointer-events-none opacity-30" />;
+};
+
+// Glowing card component
+const GlowingCard = ({ children, className = "", delay = 0 }: any) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 30 }}
+      whileInView={{ opacity: 1, y: 0 }}
+      viewport={{ once: true }}
+      transition={{ delay, duration: 0.6, ease: "easeOut" }}
+      whileHover={{ y: -10 }}
+      className={`group relative bg-white/5 backdrop-blur-xl rounded-[2rem] border border-white/5 hover:border-[#5B7AB5]/40 transition-all duration-500 overflow-hidden ${className}`}
+    >
+      <div className="absolute inset-0 bg-gradient-to-br from-[#5B7AB5]/0 via-[#5B7AB5]/0 to-[#5B7AB5]/5 opacity-0 group-hover:opacity-100 transition-opacity duration-700" />
+      <div className="absolute -inset-[100%] bg-gradient-to-r from-transparent via-[#5B7AB5]/10 to-transparent rotate-45 translate-x-[-100%] group-hover:translate-x-[100%] transition-transform duration-1000" />
+      {children}
+    </motion.div>
+  );
+};
 
 export default function Home() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const { scrollYProgress } = useScroll();
+  const mousePosition = useMouseParallax();
+
+  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
+  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
+  const y = useTransform(scrollYProgress, [0, 0.2], [0, -50]);
 
   useEffect(() => {
     const handleScroll = () => {
@@ -24,257 +266,370 @@ export default function Home() {
       const offset = 80;
       const elementPosition = element.getBoundingClientRect().top;
       const offsetPosition = elementPosition + window.pageYOffset - offset;
+      window.scrollTo({ top: offsetPosition, behavior: "smooth" });
+    }
+  };
 
-      window.scrollTo({
-        top: offsetPosition,
-        behavior: "smooth"
-      });
+  const fadeIn = {
+    hidden: { opacity: 0, y: 20 },
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
+  };
+
+  const staggerContainer = {
+    hidden: { opacity: 0 },
+    visible: {
+      opacity: 1,
+      transition: { staggerChildren: 0.1, delayChildren: 0.3 }
     }
   };
 
   return (
     <div className="min-h-screen bg-[#0A1929] overflow-x-hidden">
+      <CustomCursor />
+      <ParticleBackground />
 
-      {/* ================= HEADER ================= */}
-      <header
-        className={`fixed top-0 w-full z-50 transition-all duration-500 ${
-          isScrolled
-            ? "bg-[#0A1929]/95 backdrop-blur-xl border-b border-white/10 shadow-lg shadow-black/50"
+      {/* Animated gradient orbs */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <motion.div
+          className="absolute top-[20%] left-[10%] w-[500px] h-[500px] rounded-full bg-[#5B7AB5]/10 blur-[120px]"
+          animate={{
+            x: [0, 100, 0],
+            y: [0, 50, 0],
+          }}
+          transition={{
+            duration: 20,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+        <motion.div
+          className="absolute bottom-[20%] right-[10%] w-[600px] h-[600px] rounded-full bg-[#2D3A5E]/10 blur-[150px]"
+          animate={{
+            x: [0, -100, 0],
+            y: [0, -50, 0],
+          }}
+          transition={{
+            duration: 25,
+            repeat: Infinity,
+            ease: "linear",
+          }}
+        />
+      </div>
+
+      {/* Header with enhanced effects */}
+      <motion.header
+        style={{ y }}
+        className={`fixed top-0 w-full z-50 transition-all duration-500 ${isScrolled
+            ? "bg-[#0A1929]/90 backdrop-blur-2xl border-b border-white/10 shadow-2xl shadow-black/50"
             : "bg-transparent"
-        }`}
+          }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 sm:h-20">
-
-            {/* Logo - Shifted left with ml-0 */}
-            <div
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ type: "spring", stiffness: 300, damping: 30 }}
               className="flex items-center gap-2 sm:gap-3 cursor-pointer group ml-0 lg:-ml-4"
               onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
             >
-              <div className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-[#2D3A5E] to-[#5B7AB5] rounded-xl flex items-center justify-center shadow-lg shadow-[#2D3A5E]/30 group-hover:scale-105 transition-transform duration-300">
-                <svg className="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                </svg>
-              </div>
-              <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#4A6FA5] to-[#5B7AB5] bg-clip-text text-transparent">
+              <motion.div
+                whileHover={{ scale: 1.1, rotate: 5 }}
+                className="w-10 h-10 sm:w-11 sm:h-11 bg-gradient-to-br from-[#2D3A5E] to-[#5B7AB5] rounded-xl flex items-center justify-center shadow-lg shadow-[#2D3A5E]/30"
+              >
+                <Cloud className="w-6 h-6 text-white" />
+              </motion.div>
+              <span className="text-xl sm:text-2xl font-bold bg-gradient-to-r from-[#4A6FA5] to-[#5B7AB5] bg-clip-text text-transparent tracking-tight">
                 cloudintel<span className="text-[#5B7AB5]">.</span>
               </span>
-            </div>
+            </motion.div>
 
-            {/* Desktop Nav - Bigger text */}
             <nav className="hidden md:flex items-center gap-10 lg:gap-12 text-base lg:text-lg font-medium">
-              <button
-                onClick={() => scrollToSection("features")}
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Features
-              </button>
-              <button
-                onClick={() => scrollToSection("benefits")}
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Benefits
-              </button>
-              <button
-                onClick={() => scrollToSection("how-it-works")}
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                How it Works
-              </button>
-              <button
-                onClick={() => scrollToSection("pricing")}
-                className="text-gray-300 hover:text-white transition-colors"
-              >
-                Pricing
-              </button>
+              {['Features', 'Benefits', 'How it Works', 'Pricing'].map((item, idx) => (
+                <motion.button
+                  key={item}
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  whileHover={{ scale: 1.05 }}
+                  onClick={() => scrollToSection(item.toLowerCase().replace(/ /g, '-'))}
+                  className="text-gray-400 hover:text-white transition-colors relative group"
+                >
+                  {item}
+                  <motion.span
+                    className="absolute -bottom-1 left-0 h-0.5 bg-[#5B7AB5]"
+                    initial={{ width: 0 }}
+                    whileHover={{ width: "100%" }}
+                    transition={{ duration: 0.3 }}
+                  />
+                </motion.button>
+              ))}
             </nav>
 
-            {/* Desktop Buttons - Slightly bigger */}
-            <div className="hidden md:flex items-center gap-4">
-              <button
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="hidden md:flex items-center gap-4"
+            >
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => router.push("/login")}
-                className="text-gray-300 hover:text-white px-4 py-2 text-base font-medium transition-colors"
+                className="text-gray-400 hover:text-white px-4 py-2 text-base font-medium transition-colors"
               >
                 Sign in
-              </button>
+              </motion.button>
 
-              <button
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => router.push("/signup")}
-                className="bg-gradient-to-r from-[#2D3A5E] to-[#4A6FA5] px-6 py-2.5 rounded-xl font-medium text-white shadow-lg shadow-[#2D3A5E]/30 hover:shadow-xl hover:shadow-[#2D3A5E]/40 hover:scale-[1.02] transition-all duration-300 text-base"
+                className="relative overflow-hidden group bg-gradient-to-r from-[#2D3A5E] to-[#4A6FA5] px-6 py-2.5 rounded-xl font-medium text-white shadow-lg shadow-[#2D3A5E]/30 hover:shadow-xl hover:shadow-[#2D3A5E]/40 transition-all duration-300 text-base"
               >
-                Get Started
-              </button>
-            </div>
+                <span className="relative z-10">Get Started</span>
+                <motion.div
+                  className="absolute inset-0 bg-white/20"
+                  initial={{ y: "100%" }}
+                  whileHover={{ y: 0 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </motion.button>
+            </motion.div>
 
-            {/* Mobile Button */}
-            <button
+            {/* Mobile menu button with animation */}
+            <motion.button
+              whileTap={{ scale: 0.9 }}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
               className="md:hidden p-2 rounded-lg hover:bg-white/10 transition"
             >
-              <svg className="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <AnimatePresence mode="wait">
                 {isMenuOpen ? (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  <motion.div
+                    key="close"
+                    initial={{ rotate: -90, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: 90, opacity: 0 }}
+                  >
+                    <X className="w-6 h-6 text-white" />
+                  </motion.div>
                 ) : (
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+                  <motion.div
+                    key="menu"
+                    initial={{ rotate: 90, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: -90, opacity: 0 }}
+                  >
+                    <Menu className="w-6 h-6 text-white" />
+                  </motion.div>
                 )}
-              </svg>
-            </button>
+              </AnimatePresence>
+            </motion.button>
           </div>
 
-          {/* Mobile Menu */}
-          {isMenuOpen && (
-            <div className="md:hidden py-4 border-t border-white/10 bg-[#0A1929]/95 backdrop-blur-xl">
-              <div className="flex flex-col space-y-3">
-                <button
-                  onClick={() => scrollToSection("features")}
-                  className="text-gray-300 hover:text-white px-4 py-2 text-base font-medium text-left"
-                >
-                  Features
-                </button>
-                <button
-                  onClick={() => scrollToSection("benefits")}
-                  className="text-gray-300 hover:text-white px-4 py-2 text-base font-medium text-left"
-                >
-                  Benefits
-                </button>
-                <button
-                  onClick={() => scrollToSection("how-it-works")}
-                  className="text-gray-300 hover:text-white px-4 py-2 text-base font-medium text-left"
-                >
-                  How it Works
-                </button>
-                <button
-                  onClick={() => scrollToSection("pricing")}
-                  className="text-gray-300 hover:text-white px-4 py-2 text-base font-medium text-left"
-                >
-                  Pricing
-                </button>
-                <div className="flex flex-col space-y-2 pt-2 border-t border-white/10">
-                  <button
-                    onClick={() => router.push("/login")}
-                    className="text-gray-300 hover:text-white px-4 py-2 text-base font-medium text-left"
-                  >
-                    Sign in
-                  </button>
-                  <button
-                    onClick={() => router.push("/signup")}
-                    className="bg-gradient-to-r from-[#2D3A5E] to-[#4A6FA5] mx-4 px-4 py-3 rounded-xl font-medium text-white text-base"
-                  >
-                    Get Started
-                  </button>
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
-
-      {/* ================= HERO SECTION ================= */}
-      <section className="relative pt-36 pb-28 px-6 sm:px-8 lg:px-10 overflow-hidden">
-        {/* ... (hero section remains the same) ... */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#0A1929] via-[#0F1F2F] to-[#1A2A4A]"></div>
-        <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_top_right,_rgba(74,111,165,0.15),transparent_50%),radial-gradient(ellipse_at_bottom_left,_rgba(45,58,94,0.15),transparent_50%)]"></div>
-
-        {/* Animated Glow Orbs */}
-        <div className="absolute top-40 -left-20 w-80 h-80 bg-[#2D3A5E]/20 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-40 -right-20 w-80 h-80 bg-[#4A6FA5]/20 rounded-full blur-3xl animate-pulse delay-1000"></div>
-
-        {/* Subtle Grid */}
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMzAgMzBoMzB2MzBIMzB6TTAgMGgzMHYzMEgweiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMkQzQTVFIiBzdHJva2Utb3BhY2l0eT0iMC4xIiBzdHJva2Utd2lkdGg9IjEiLz48L3N2Zz4=')] opacity-20"></div>
-
-        <div className="relative max-w-6xl mx-auto">
-          <div className="text-center max-w-4xl mx-auto">
-
-            {/* Eyebrow */}
-            <div className="inline-flex items-center gap-2 bg-white/5 backdrop-blur-sm px-4 py-2 rounded-full border border-white/10 mb-8">
-              <span className="relative flex h-2 w-2">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-              <span className="text-sm text-gray-300">Intelligent Cloud Analytics Platform</span>
-            </div>
-
-            {/* Main Headline */}
-            <h1 className="text-5xl sm:text-6xl md:text-7xl font-bold leading-tight tracking-tight mb-6">
-              <span className="text-white">Master Your AWS</span>
-              <span className="block mt-2 bg-gradient-to-r from-[#4A6FA5] via-[#5B7AB5] to-[#6B8ABF] bg-clip-text text-transparent">
-                Cost & Performance
-              </span>
-            </h1>
-
-            {/* Value Proposition */}
-            <p className="text-xl text-gray-300 mb-4 max-w-2xl mx-auto">
-              Real-time monitoring, AI-powered forecasting, and automated optimization — all in one platform.
-            </p>
-
-            {/* Subheading */}
-            <p className="text-base text-gray-400 mb-10 max-w-xl mx-auto">
-              Get complete visibility into your AWS infrastructure, predict costs with 98% accuracy, and eliminate waste with data-driven insights.
-            </p>
-
-            {/* CTA Buttons */}
-            <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button
-                onClick={() => router.push("/signup")}
-                className="group bg-gradient-to-r from-[#2D3A5E] to-[#4A6FA5] px-8 py-4 rounded-xl font-semibold text-white text-lg shadow-xl shadow-[#2D3A5E]/30 hover:shadow-2xl hover:shadow-[#4A6FA5]/40 hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2"
+          {/* Enhanced mobile menu */}
+          <AnimatePresence>
+            {isMenuOpen && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.3, ease: "easeInOut" }}
+                className="md:hidden py-6 border-t border-white/10 bg-[#0A1929]/95 backdrop-blur-2xl overflow-hidden"
               >
-                Start Free Trial
-                <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-                </svg>
-              </button>
-              <button
+                <div className="flex flex-col space-y-4 px-2">
+                  {['Features', 'Benefits', 'How it Works', 'Pricing'].map((item, i) => (
+                    <motion.button
+                      key={item}
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: i * 0.1 }}
+                      onClick={() => scrollToSection(item.toLowerCase().replace(/ /g, '-'))}
+                      className="text-gray-400 hover:text-white px-4 py-3 text-lg font-medium text-left rounded-xl hover:bg-white/5 transition-all"
+                    >
+                      {item}
+                    </motion.button>
+                  ))}
+                  <div className="flex flex-col space-y-3 pt-4 border-t border-white/10">
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.4 }}
+                      onClick={() => router.push("/login")}
+                      className="text-gray-400 hover:text-white px-4 py-2 text-lg font-medium text-left"
+                    >
+                      Sign in
+                    </motion.button>
+                    <motion.button
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ delay: 0.5 }}
+                      onClick={() => router.push("/signup")}
+                      className="bg-gradient-to-r from-[#2D3A5E] to-[#4A6FA5] mx-4 px-4 py-4 rounded-xl font-semibold text-white text-lg shadow-lg shadow-[#2D3A5E]/30"
+                    >
+                      Get Started
+                    </motion.button>
+                  </div>
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.header>
+
+      {/* Hero Section with 3D tilt effect */}
+      <section className="relative pt-36 pb-28 px-6 sm:px-8 lg:px-10 overflow-hidden">
+        <div className="relative max-w-6xl mx-auto">
+          <motion.div
+            variants={staggerContainer}
+            initial="hidden"
+            animate="visible"
+            className="text-center max-w-4xl mx-auto"
+          >
+            <motion.div
+              variants={fadeIn}
+              className="inline-flex items-center gap-2 bg-[#4A6FA5]/10 backdrop-blur-md px-4 py-2 rounded-full border border-[#4A6FA5]/20 mb-8"
+            >
+              <motion.div
+                animate={{ rotate: 360 }}
+                transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+              >
+                <Sparkles className="w-4 h-4 text-[#5B7AB5]" />
+              </motion.div>
+              <span className="text-sm font-medium text-[#5B7AB5] tracking-wide uppercase">Intelligent Cloud Analytics Platform</span>
+            </motion.div>
+
+            <motion.h1 variants={fadeIn} className="text-5xl sm:text-6xl md:text-8xl font-bold leading-[1.1] tracking-tight mb-8">
+              <span className="text-white">Master Your AWS</span>
+              <motion.span
+                className="block mt-2 bg-gradient-to-r from-[#4A6FA5] via-[#5B7AB5] to-[#7B9ACF] bg-clip-text text-transparent"
+                animate={{
+                  backgroundPosition: ["0% 50%", "100% 50%", "0% 50%"],
+                }}
+                transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
+                style={{ backgroundSize: "200% auto" }}
+              >
+                Cost & Performance
+              </motion.span>
+            </motion.h1>
+
+            <motion.p variants={fadeIn} className="text-xl md:text-2xl text-gray-400 mb-6 max-w-2xl mx-auto leading-relaxed">
+              Real-time monitoring, AI-powered forecasting, and automated optimization — all in one unified platform.
+            </motion.p>
+
+            <motion.p variants={fadeIn} className="text-base text-gray-500 mb-12 max-w-xl mx-auto">
+              Get complete visibility, predict costs with 98% accuracy, and eliminate waste with data-driven insights.
+            </motion.p>
+
+            <motion.div variants={fadeIn} className="flex flex-col sm:flex-row justify-center gap-5">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push("/signup")}
+                className="group relative bg-[#5B7AB5] hover:bg-[#4A6FA5] px-10 py-5 rounded-2xl font-bold text-white text-xl shadow-2xl shadow-[#5B7AB5]/40 transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden"
+              >
+                <span className="relative z-10">Start Free Trial</span>
+                <motion.div
+                  animate={{ x: [0, 5, 0] }}
+                  transition={{ duration: 1, repeat: Infinity }}
+                >
+                  <ChevronRight className="relative z-10 w-6 h-6" />
+                </motion.div>
+                <motion.div
+                  className="absolute inset-0 bg-white/20"
+                  initial={{ y: "100%" }}
+                  whileHover={{ y: 0 }}
+                  transition={{ duration: 0.3 }}
+                />
+              </motion.button>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
                 onClick={() => scrollToSection("features")}
-                className="border border-white/20 bg-white/5 backdrop-blur-sm px-8 py-4 rounded-xl font-semibold text-white text-lg hover:bg-white/10 hover:border-white/30 transition-all duration-300"
+                className="bg-white/5 backdrop-blur-lg border-2 border-white/10 px-10 py-5 rounded-2xl font-bold text-white text-xl hover:bg-white/10 hover:border-[#5B7AB5]/50 transition-all duration-300"
               >
                 See How It Works
-              </button>
-            </div>
+              </motion.button>
+            </motion.div>
 
-            {/* Platform Impact Metrics */}
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mt-20">
+            {/* Animated metrics with counters */}
+            <motion.div
+              variants={staggerContainer}
+              className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 mt-24"
+            >
               {[
-                { value: "30%", label: "Avg. Cost Reduction", icon: "💰" },
-                { value: "98%", label: "Forecast Accuracy", icon: "🎯" },
-                { value: "Real-time", label: "AWS Monitoring", icon: "⚡" },
-                { value: "AI-Powered", label: "Optimization Engine", icon: "🤖" }
+                { value: "30", label: "Avg. Cost Reduction", icon: TrendingUp, suffix: "%", color: "text-emerald-400" },
+                { value: "98", label: "Forecast Accuracy", icon: Target, suffix: "%", color: "text-[#5B7AB5]" },
+                { value: "Real-time", label: "Monitoring", icon: Zap, suffix: "", color: "text-amber-400" },
+                { value: "AI-Powered", label: "Optimization", icon: Cpu, suffix: "", color: "text-purple-400" }
               ].map((metric, i) => (
-                <div key={i} className="text-center">
-                  <div className="text-2xl mb-2">{metric.icon}</div>
-                  <div className="text-2xl font-bold text-white">{metric.value}</div>
-                  <div className="text-xs text-gray-400 mt-1">{metric.label}</div>
-                </div>
+                <motion.div
+                  key={i}
+                  variants={fadeIn}
+                  whileHover={{ y: -5, scale: 1.02 }}
+                  className="bg-white/5 backdrop-blur-sm p-6 rounded-3xl border border-white/5 hover:border-white/20 transition-all duration-300 group"
+                >
+                  <motion.div
+                    className={`w-12 h-12 ${metric.color} bg-white/5 rounded-xl flex items-center justify-center mx-auto mb-4`}
+                    whileHover={{ scale: 1.1, rotate: 5 }}
+                  >
+                    <metric.icon className="w-6 h-6" />
+                  </motion.div>
+                  <div className="text-3xl font-black text-white mb-1 tracking-tight">
+                    {metric.value === "Real-time" || metric.value === "AI-Powered" ?
+                      metric.value :
+                      <AnimatedCounter value={metric.value} suffix={metric.suffix} />
+                    }
+                  </div>
+                  <div className="text-sm font-medium text-gray-500 uppercase tracking-widest leading-tight">{metric.label}</div>
+                </motion.div>
               ))}
-            </div>
+            </motion.div>
 
-            {/* Built With Tech Stack */}
-            <div className="flex flex-wrap items-center justify-center gap-6 mt-12 pt-8 border-t border-white/10">
-              <span className="text-xs text-gray-500 uppercase tracking-wider">Built with</span>
-              {["AWS SDK", "FastAPI", "PostgreSQL", "ML Model"].map((tech, i) => (
-                <span key={i} className="text-sm text-gray-400 bg-white/5 px-3 py-1.5 rounded-full border border-white/10">
+            {/* Tech stack with hover effects */}
+            <motion.div
+              variants={fadeIn}
+              className="flex flex-wrap items-center justify-center gap-6 mt-16 pt-10 border-t border-white/5"
+            >
+              <span className="text-sm text-gray-600 font-bold uppercase tracking-[0.3em]">Built with</span>
+              {["AWS SDK", "FastAPI", "PostgreSQL", "ML Models"].map((tech, i) => (
+                <motion.span
+                  key={i}
+                  whileHover={{ y: -5, color: "#fff", borderColor: "#5B7AB5", scale: 1.05 }}
+                  className="text-sm font-semibold text-gray-500 bg-white/5 px-5 py-2.5 rounded-2xl border border-white/5 cursor-default transition-all"
+                >
                   {tech}
-                </span>
+                </motion.span>
               ))}
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </section>
 
-      {/* ================= TRUST & TESTIMONIALS ================= */}
+      {/* Trust Section with auto-rotating testimonials */}
       <section className="py-24 px-6 sm:px-8 lg:px-10 bg-[#0F1F2F] relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMzAgMzBoMzB2MzBIMzB6TTAgMGgzMHYzMEgweiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjMkQzQTVFIiBzdHJva2Utb3BhY2l0eT0iMC4wNSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+')] opacity-20"></div>
-
         <div className="relative max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <h2 className="text-3xl sm:text-4xl font-bold text-white tracking-tight mb-4">
-              Trusted by Early Users
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-20"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
+              className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-[#2D3A5E] to-[#4A6FA5] mb-6"
+            >
+              <Users className="w-8 h-8 text-white" />
+            </motion.div>
+            <h2 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-6">
+              Trusted by Engineering Teams
             </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              See what engineering teams are saying about CloudIntel
+            <p className="text-gray-500 text-xl max-w-2xl mx-auto">
+              CloudIntel is the preferred choice for modern enterprises optimizing their AWS infrastructure.
             </p>
-          </div>
+          </motion.div>
 
-          <div className="grid md:grid-cols-3 gap-6 lg:gap-8">
+          <div className="grid md:grid-cols-3 gap-8 lg:gap-10">
             {[
               {
                 quote: "Cut our AWS costs by 32% in the first month. The optimization recommendations were spot-on and easy to implement.",
@@ -298,515 +653,575 @@ export default function Home() {
                 initials: "PP"
               }
             ].map((testimonial, i) => (
-              <div
-                key={i}
-                className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-[#4A6FA5]/50 transition-all duration-300 hover:-translate-y-1 hover:shadow-xl hover:shadow-[#2D3A5E]/20"
-              >
-                {/* Star Rating */}
-                <div className="flex gap-1 mb-4">
-                  {[...Array(5)].map((_, j) => (
-                    <svg key={j} className="w-5 h-5 text-yellow-400 fill-current" viewBox="0 0 20 20">
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                    </svg>
-                  ))}
-                </div>
-
-                {/* Quote */}
-                <p className="text-gray-300 text-sm leading-relaxed mb-6">
-                  "{testimonial.quote}"
-                </p>
-
-                {/* Author */}
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#2D3A5E] to-[#4A6FA5] flex items-center justify-center text-sm font-medium text-white">
-                    {testimonial.initials}
+              <GlowingCard key={i} delay={i * 0.2}>
+                <div className="p-10">
+                  <div className="flex gap-1 mb-6">
+                    {[...Array(5)].map((_, j) => (
+                      <motion.div
+                        key={j}
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ delay: i * 0.1 + j * 0.1 }}
+                      >
+                        <Star className="w-4 h-4 text-[#5B7AB5] fill-[#5B7AB5]" />
+                      </motion.div>
+                    ))}
                   </div>
-                  <div>
-                    <p className="text-sm font-semibold text-white">{testimonial.author}</p>
-                    <p className="text-xs text-gray-400">{testimonial.role}</p>
+                  <p className="text-gray-400 text-lg leading-relaxed mb-8 italic">
+                    "{testimonial.quote}"
+                  </p>
+                  <div className="flex items-center gap-4">
+                    <motion.div
+                      whileHover={{ rotate: 6 }}
+                      className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2D3A5E] to-[#4A6FA5] flex items-center justify-center text-sm font-bold text-white shadow-lg"
+                    >
+                      {testimonial.initials}
+                    </motion.div>
+                    <div>
+                      <p className="text-base font-bold text-white">{testimonial.author}</p>
+                      <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{testimonial.role}</p>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </GlowingCard>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ================= FEATURES SECTION ================= */}
-      <section id="features" className="py-24 px-6 sm:px-8 lg:px-10 bg-[#0A1929]">
+      {/* Features Section with enhanced cards */}
+      <section id="features" className="py-32 px-6 sm:px-8 lg:px-10 bg-[#0A1929] relative overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <span className="text-[#5B7AB5] font-semibold text-sm uppercase tracking-[0.2em]">Features</span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mt-4 mb-4">
-              Everything you need to optimize your cloud
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-24"
+          >
+            <span className="text-[#5B7AB5] font-black text-sm uppercase tracking-[0.4em] mb-4 block">Features</span>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight mb-8">
+              Everything you need to <br /> <span className="text-[#5B7AB5]">optimize your cloud</span>
             </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Comprehensive tools that give you complete control over your AWS infrastructure
+            <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed">
+              Comprehensive tools that give you absolute control over your infrastructure and spending.
             </p>
-          </div>
+          </motion.div>
 
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
                 title: "Reduce Cloud Costs",
                 description: "Identify waste and optimize resources to cut your AWS bill by up to 35% with automated recommendations.",
-                icon: "💰",
-                benefit: "Save money automatically"
+                icon: BarChart3,
+                benefit: "Save money automatically",
+                color: "from-emerald-500 to-teal-500",
+                stat: "35%",
+                statLabel: "average savings"
               },
               {
                 title: "Forecast with Confidence",
                 description: "Predict future costs with 98% accuracy using ML models trained on your usage patterns.",
-                icon: "📈",
-                benefit: "Plan budgets accurately"
+                icon: TrendingUp,
+                benefit: "Plan budgets accurately",
+                color: "from-blue-500 to-indigo-500",
+                stat: "98%",
+                statLabel: "accuracy rate"
               },
               {
                 title: "Real-time Visibility",
                 description: "Monitor every AWS resource with live metrics, instant alerts, and comprehensive dashboards.",
-                icon: "👁️",
-                benefit: "Never miss an anomaly"
+                icon: LayoutDashboard,
+                benefit: "Never miss an anomaly",
+                color: "from-purple-500 to-pink-500",
+                stat: "24/7",
+                statLabel: "monitoring"
               },
               {
                 title: "AI-Powered Insights",
                 description: "Get smart recommendations to improve efficiency and eliminate waste across all services.",
-                icon: "🤖",
-                benefit: "Optimize automatically"
+                icon: Sparkles,
+                benefit: "Optimize automatically",
+                color: "from-amber-500 to-orange-500",
+                stat: "10x",
+                statLabel: "faster insights"
               },
               {
                 title: "Multi-Account Support",
                 description: "Manage all your AWS accounts from a single dashboard with consolidated views.",
-                icon: "🏢",
-                benefit: "Centralized control"
+                icon: Globe,
+                benefit: "Centralized control",
+                color: "from-cyan-500 to-blue-500",
+                stat: "Unlimited",
+                statLabel: "accounts"
               },
               {
-                title: "Sustainability Tracking",
-                description: "Monitor carbon footprint and get recommendations for green computing practices.",
-                icon: "🌱",
-                benefit: "Build responsibly"
+                title: "Security & Compliance",
+                description: "Ensure your infrastructure follows best practices with automated security audits.",
+                icon: ShieldCheck,
+                benefit: "Stay secure always",
+                color: "from-red-500 to-rose-500",
+                stat: "100%",
+                statLabel: "compliant"
               }
             ].map((feature, i) => (
-              <div
-                key={i}
-                className="group relative bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 hover:border-[#4A6FA5] transition-all duration-500 hover:-translate-y-2 hover:shadow-2xl hover:shadow-[#2D3A5E]/30"
-              >
-                {/* Icon with glow */}
-                <div className="relative mb-6">
-                  <div className="absolute inset-0 bg-[#4A6FA5]/20 rounded-xl blur-xl opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                  <div className="relative w-14 h-14 rounded-xl bg-gradient-to-br from-[#2D3A5E] to-[#4A6FA5] flex items-center justify-center text-2xl shadow-lg">
-                    {feature.icon}
+              <GlowingCard key={i} delay={i * 0.1}>
+                <div className="p-10">
+                  <motion.div
+                    className="relative mb-8"
+                    whileHover={{ scale: 1.05 }}
+                  >
+                    <div className={`w-16 h-16 rounded-[1.25rem] bg-gradient-to-br ${feature.color} flex items-center justify-center text-white shadow-xl`}>
+                      <feature.icon className="w-8 h-8" />
+                    </div>
+                    <motion.div
+                      className="absolute -inset-2 bg-[#5B7AB5]/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                      animate={{ scale: [1, 1.2, 1] }}
+                      transition={{ duration: 2, repeat: Infinity }}
+                    />
+                  </motion.div>
+
+                  <h3 className="text-2xl font-bold text-white mb-4 tracking-tight">{feature.title}</h3>
+                  <p className="text-gray-500 text-base leading-relaxed mb-6">{feature.description}</p>
+
+                  <div className="mb-6">
+                    <div className="text-3xl font-black bg-gradient-to-r ${feature.color} bg-clip-text text-transparent">
+                      {feature.stat}
+                    </div>
+                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">{feature.statLabel}</div>
+                  </div>
+
+                  <div className="inline-flex items-center gap-2 text-xs font-bold text-[#5B7AB5] bg-[#5B7AB5]/10 px-4 py-2 rounded-full uppercase tracking-widest">
+                    <CheckCircle2 className="w-3 h-3" />
+                    <span>{feature.benefit}</span>
                   </div>
                 </div>
-
-                <h3 className="text-xl font-semibold text-white mb-3">{feature.title}</h3>
-                <p className="text-gray-400 text-sm leading-relaxed mb-4">{feature.description}</p>
-
-                {/* Benefit tag */}
-                <div className="inline-flex items-center gap-1 text-xs text-[#5B7AB5] bg-[#5B7AB5]/10 px-3 py-1 rounded-full">
-                  <span>{feature.benefit}</span>
-                </div>
-
-                {/* Decorative corner */}
-                <div className="absolute top-4 right-4 w-12 h-12 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
-                  <svg className="w-6 h-6 text-[#4A6FA5]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                  </svg>
-                </div>
-              </div>
+              </GlowingCard>
             ))}
           </div>
         </div>
       </section>
 
-      {/* ================= BENEFITS SECTION ================= */}
-      <section id="benefits" className="py-24 px-6 sm:px-8 lg:px-10 bg-[#0F1F2F]">
+      {/* Benefits Section with animated counters */}
+      <section id="benefits" className="py-32 px-6 sm:px-8 lg:px-10 bg-[#0F1F2F] relative overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
-            <div>
-              <span className="text-[#5B7AB5] font-semibold text-sm uppercase tracking-[0.2em]">Benefits</span>
-              <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mt-4 mb-6">
-                Transform your cloud operations
+          <div className="grid lg:grid-cols-2 gap-20 items-center">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+            >
+              <span className="text-[#5B7AB5] font-black text-sm uppercase tracking-[0.4em] mb-4 block">Benefits</span>
+              <h2 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-8 leading-tight">
+                Transform your cloud <br /> <span className="text-[#5B7AB5]">into a strategic asset</span>
               </h2>
-              <p className="text-gray-400 text-lg mb-8">
-                Stop guessing and start optimizing. CloudIntel gives you the insights you need to make smarter decisions.
+              <p className="text-gray-500 text-xl mb-12 leading-relaxed">
+                CloudIntel goes beyond simple monitoring. We provide the intelligence you need to innovate faster and spend smarter.
               </p>
 
-              <div className="space-y-6">
+              <div className="space-y-8">
                 {[
-                  {
-                    title: "Reduce costs by 30% on average",
-                    description: "Identify underutilized resources and right-size instances automatically",
-                    icon: "💰"
-                  },
-                  {
-                    title: "Improve infrastructure efficiency",
-                    description: "Get real-time visibility into resource utilization and performance",
-                    icon: "⚡"
-                  },
-                  {
-                    title: "Make data-driven decisions",
-                    description: "Accurate forecasts and insights to plan your cloud infrastructure better",
-                    icon: "📊"
-                  },
-                  {
-                    title: "Enterprise-grade security",
-                    description: "Your data is encrypted and secure with industry-standard compliance",
-                    icon: "🔒"
-                  }
+                  { title: "Reduce costs by 30% on average", description: "Identify underutilized resources and right-size instances automatically", icon: BarChart3, color: "text-emerald-400" },
+                  { title: "Improve infrastructure efficiency", description: "Get real-time visibility into resource utilization and performance", icon: Zap, color: "text-[#5B7AB5]" },
+                  { title: "Make data-driven decisions", description: "Accurate forecasts and insights to plan your cloud infrastructure better", icon: TrendingUp, color: "text-amber-400" },
+                  { title: "Enterprise-grade security", description: "Your data is encrypted and secure with industry-standard compliance", icon: ShieldCheck, color: "text-purple-400" }
                 ].map((benefit, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="w-10 h-10 rounded-lg bg-[#4A6FA5]/20 flex items-center justify-center flex-shrink-0">
-                      <span className="text-xl">{benefit.icon}</span>
-                    </div>
+                  <motion.div
+                    key={i}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: i * 0.1 }}
+                    whileHover={{ x: 10 }}
+                    className="flex gap-6 group"
+                  >
+                    <motion.div
+                      whileHover={{ scale: 1.1, rotate: 5 }}
+                      className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center flex-shrink-0 group-hover:border-[#5B7AB5]/40 transition-all duration-300"
+                    >
+                      <benefit.icon className={`w-7 h-7 ${benefit.color}`} />
+                    </motion.div>
                     <div>
-                      <h3 className="text-lg font-semibold text-white mb-2">{benefit.title}</h3>
-                      <p className="text-gray-400 text-sm">{benefit.description}</p>
+                      <h3 className="text-xl font-bold text-white mb-2">{benefit.title}</h3>
+                      <p className="text-gray-500 text-base leading-relaxed">{benefit.description}</p>
                     </div>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+
+            <motion.div
+              variants={staggerContainer}
+              initial="hidden"
+              whileInView="visible"
+              viewport={{ once: true }}
+              className="grid grid-cols-2 gap-6"
+            >
+              {[
+                { value: "30", label: "Average savings", suffix: "%", color: "from-emerald-500 to-teal-400", icon: BarChart3 },
+                { value: "98", label: "Forecast accuracy", suffix: "%", color: "from-[#5B7AB5] to-blue-400", icon: Target },
+                { value: "24", label: "Real-time monitoring", suffix: "/7", color: "from-purple-500 to-pink-400", icon: LayoutDashboard },
+                { value: "10", label: "Faster insights", suffix: "x", color: "from-amber-500 to-orange-400", icon: Zap }
+              ].map((stat, i) => (
+                <motion.div
+                  key={i}
+                  variants={fadeIn}
+                  whileHover={{ y: -5, scale: 1.02 }}
+                  className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-[#5B7AB5]/40 transition-all duration-500 shadow-2xl"
+                >
+                  <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center text-white mb-6 shadow-lg`}>
+                    <stat.icon className="w-6 h-6" />
                   </div>
+                  <div className={`text-4xl font-black bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2 tracking-tighter`}>
+                    <AnimatedCounter value={stat.value} suffix={stat.suffix} />
+                  </div>
+                  <p className="text-sm font-bold text-gray-500 uppercase tracking-widest leading-tight">{stat.label}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* How it Works with progress tracker */}
+      <section id="how-it-works" className="py-32 px-6 sm:px-8 lg:px-10 bg-[#0A1929] relative">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-24"
+          >
+            <span className="text-[#5B7AB5] font-black text-sm uppercase tracking-[0.4em] mb-4 block">Process</span>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight mb-8">
+              Get started in <span className="text-[#5B7AB5]">minutes</span>
+            </h2>
+            <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed">
+              Simple three-step process to start optimizing your cloud infrastructure with zero friction.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-12 relative">
+            <div className="hidden md:block absolute top-[4.5rem] left-[15%] right-[15%] h-0.5 bg-white/5 overflow-hidden">
+              <motion.div
+                initial={{ left: "-100%" }}
+                whileInView={{ left: "100%" }}
+                viewport={{ once: true }}
+                transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                className="absolute top-0 bottom-0 w-1/3 bg-gradient-to-r from-transparent via-[#5B7AB5] to-transparent"
+              />
+            </div>
+
+            {[
+              { step: "01", title: "Connect your AWS", description: "Securely connect your AWS account with read-only credentials in just a few clicks.", icon: Cloud, color: "text-blue-400" },
+              { step: "02", title: "AI Analysis", description: "Our engine analyzes your infrastructure and identifies optimization opportunities instantly.", icon: Sparkles, color: "text-purple-400" },
+              { step: "03", title: "Start Saving", description: "Get actionable recommendations and start reducing costs right away.", icon: BarChart3, color: "text-emerald-400" }
+            ].map((item, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.2 }}
+                className="relative group text-center"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  className="relative z-10 mx-auto w-24 h-24 rounded-[2rem] bg-[#0A1929] border-2 border-white/5 flex items-center justify-center mb-8 group-hover:border-[#5B7AB5] transition-all duration-500 shadow-2xl"
+                >
+                  <item.icon className={`w-10 h-10 ${item.color}`} />
+                  <motion.div
+                    className="absolute inset-0 rounded-[2rem] bg-[#5B7AB5]/20 opacity-0 group-hover:opacity-100 transition-opacity"
+                    animate={{ scale: [1, 1.2, 1] }}
+                    transition={{ duration: 2, repeat: Infinity }}
+                  />
+                </motion.div>
+                <div className="text-6xl font-black text-white/5 absolute top-0 left-1/2 -translate-x-1/2 -translate-y-4 pointer-events-none group-hover:text-white/10 transition-colors">
+                  {item.step}
+                </div>
+                <h3 className="text-2xl font-bold text-white mb-4 tracking-tight">{item.title}</h3>
+                <p className="text-gray-500 text-base leading-relaxed px-4">{item.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Pricing Section with enhanced cards */}
+      <section id="pricing" className="py-32 px-6 sm:px-8 lg:px-10 bg-[#0F1F2F]">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-center mb-24"
+          >
+            <span className="text-[#5B7AB5] font-black text-sm uppercase tracking-[0.4em] mb-4 block">Pricing</span>
+            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight mb-8">
+              Simple, <span className="text-[#5B7AB5]">transparent</span> pricing
+            </h2>
+            <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed">
+              Start for free and scale as you grow. No hidden fees or complex contracts.
+            </p>
+          </motion.div>
+
+          <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
+            {[
+              { name: "Starter", price: "$0", period: "forever", description: "Perfect for personal projects and experimentation", features: ["Up to 10 AWS resources", "Basic monitoring", "7-day data retention", "Email support"], buttonText: "Start Free", popular: false },
+              { name: "Pro", price: "$49", period: "per month", description: "For growing teams with multiple environments", features: ["Unlimited AWS resources", "Advanced analytics", "30-day data retention", "AI-powered forecasts", "Priority support", "Custom reports"], buttonText: "Start 14-day trial", popular: true },
+              { name: "Enterprise", price: "Custom", period: "on request", description: "For large organizations with complex needs", features: ["Everything in Pro", "SLA guarantees", "Custom integrations", "Dedicated account manager", "On-premise deployment"], buttonText: "Contact Sales", popular: false }
+            ].map((plan, i) => (
+              <GlowingCard key={i} delay={i * 0.1}>
+                <div className={`relative p-10 flex flex-col h-full ${plan.popular ? "bg-gradient-to-br from-[#1A2A4A] to-[#0F1F2F]" : ""}`}>
+                  {plan.popular && (
+                    <motion.div
+                      initial={{ scale: 0 }}
+                      whileInView={{ scale: 1 }}
+                      className="absolute -top-5 left-1/2 -translate-x-1/2 bg-[#5B7AB5] text-white px-6 py-2 rounded-full text-xs font-black uppercase tracking-widest shadow-xl"
+                    >
+                      Most Popular
+                    </motion.div>
+                  )}
+
+                  <div className="mb-10">
+                    <h3 className="text-2xl font-bold text-white mb-2">{plan.name}</h3>
+                    <div className="flex items-baseline gap-1 mb-4">
+                      <motion.span
+                        className="text-5xl font-black text-white"
+                        animate={plan.popular ? { scale: [1, 1.05, 1] } : {}}
+                        transition={{ duration: 2, repeat: Infinity }}
+                      >
+                        {plan.price}
+                      </motion.span>
+                      <span className="text-gray-500 font-medium lowercase">/{plan.period}</span>
+                    </div>
+                    <p className="text-gray-500 text-sm leading-relaxed">{plan.description}</p>
+                  </div>
+
+                  <ul className="space-y-4 mb-10 flex-grow">
+                    {plan.features.map((feature, j) => (
+                      <motion.li
+                        key={j}
+                        initial={{ opacity: 0, x: -20 }}
+                        whileInView={{ opacity: 1, x: 0 }}
+                        transition={{ delay: j * 0.05 }}
+                        className="flex items-center gap-3 text-sm"
+                      >
+                        <CheckCircle2 className="w-5 h-5 text-emerald-500 flex-shrink-0" />
+                        <span className="text-gray-400">{feature}</span>
+                      </motion.li>
+                    ))}
+                  </ul>
+
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => router.push(plan.name === "Enterprise" ? "/contact" : "/signup")}
+                    className={`w-full py-5 rounded-2xl font-bold text-lg transition-all duration-300 relative overflow-hidden group ${plan.popular
+                        ? "bg-[#5B7AB5] text-white shadow-xl shadow-[#5B7AB5]/40"
+                        : "bg-white/5 text-white border border-white/10 hover:bg-white/10 hover:border-white/20"
+                      }`}
+                  >
+                    <span className="relative z-10">{plan.buttonText}</span>
+                    <motion.div
+                      className="absolute inset-0 bg-white/20"
+                      initial={{ y: "100%" }}
+                      whileHover={{ y: 0 }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </motion.button>
+                </div>
+              </GlowingCard>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Enhanced CTA Section with parallax */}
+      <section className="py-32 px-6 sm:px-8 lg:px-10 bg-gradient-to-br from-[#0A1929] to-[#1A2A4A] text-white text-center relative overflow-hidden">
+        <motion.div
+          style={{ x: mousePosition.x * 0.5, y: mousePosition.y * 0.5 }}
+          className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] bg-[#5B7AB5]/10 rounded-full blur-[120px]"
+        />
+
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          whileInView={{ opacity: 1, scale: 1 }}
+          viewport={{ once: true }}
+          className="relative max-w-4xl mx-auto"
+        >
+          <motion.div
+            animate={{ scale: [1, 1.02, 1] }}
+            transition={{ duration: 4, repeat: Infinity }}
+            className="inline-flex items-center gap-2 bg-white/10 backdrop-blur-xl px-6 py-2 rounded-full border border-white/10 mb-10"
+          >
+            <motion.div
+              animate={{ rotate: 360 }}
+              transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+            >
+              <Sparkles className="w-5 h-5 text-[#5B7AB5]" />
+            </motion.div>
+            <span className="text-sm font-bold uppercase tracking-widest">Ready to optimize?</span>
+          </motion.div>
+
+          <h2 className="text-5xl sm:text-6xl md:text-8xl font-black mb-8 tracking-tighter leading-tight">
+            Start optimizing <br /> <span className="text-[#5B7AB5]">today</span>
+          </h2>
+          <p className="text-gray-400 text-xl md:text-2xl mb-12 max-w-2xl mx-auto leading-relaxed">
+            Join hundreds of high-performing teams already saving millions on AWS. <br /> Your 14-day free trial starts now.
+          </p>
+
+          <div className="flex flex-col sm:flex-row justify-center gap-6">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => router.push("/signup")}
+              className="group relative bg-[#5B7AB5] text-white px-12 py-6 rounded-2xl font-bold text-xl shadow-2xl shadow-[#5B7AB5]/40 transition-all duration-300 flex items-center justify-center gap-3 overflow-hidden"
+            >
+              <span className="relative z-10">Get Started Free</span>
+              <motion.div
+                animate={{ x: [0, 5, 0] }}
+                transition={{ duration: 1, repeat: Infinity }}
+              >
+                <ArrowRight className="relative z-10 w-6 h-6" />
+              </motion.div>
+              <motion.div
+                className="absolute inset-0 bg-white/20"
+                initial={{ y: "100%" }}
+                whileHover={{ y: 0 }}
+                transition={{ duration: 0.3 }}
+              />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => router.push("/contact")}
+              className="bg-white/5 backdrop-blur-xl border-2 border-white/10 px-12 py-6 rounded-2xl font-bold text-xl text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300"
+            >
+              Talk to Sales
+            </motion.button>
+          </div>
+
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ delay: 0.5 }}
+            className="text-sm text-gray-500 mt-12 flex flex-wrap items-center justify-center gap-6 font-medium"
+          >
+            {[
+              { icon: CheckCircle2, text: "No credit card required", color: "text-emerald-500" },
+              { icon: CheckCircle2, text: "14-day free trial", color: "text-emerald-500" },
+              { icon: CheckCircle2, text: "Cancel anytime", color: "text-emerald-500" }
+            ].map((item, i) => (
+              <motion.span
+                key={i}
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.6 + i * 0.1 }}
+                className="flex items-center gap-2"
+              >
+                <item.icon className={`w-5 h-5 ${item.color}`} />
+                {item.text}
+              </motion.span>
+            ))}
+          </motion.div>
+        </motion.div>
+      </section>
+
+      {/* Enhanced Footer */}
+      <footer className="bg-[#0A1929] text-gray-500 px-6 sm:px-8 lg:px-10 py-24 border-t border-white/5 relative">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-16 mb-20">
+            <div className="col-span-1 sm:col-span-2 lg:col-span-1">
+              <div className="flex items-center gap-3 mb-8">
+                <motion.div
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  className="w-10 h-10 bg-gradient-to-br from-[#2D3A5E] to-[#4A6FA5] rounded-xl flex items-center justify-center shadow-lg"
+                >
+                  <Cloud className="w-6 h-6 text-white" />
+                </motion.div>
+                <span className="text-2xl font-black text-white tracking-tighter">cloudintel<span className="text-[#5B7AB5]">.</span></span>
+              </div>
+              <p className="text-sm leading-relaxed mb-8 max-w-xs font-medium">
+                AI-powered Cloud Financial Operations (FinOps) platform. We help engineering teams build sustainable and cost-efficient cloud architectures.
+              </p>
+              <div className="flex gap-4">
+                {[
+                  { icon: Globe, label: "Web" },
+                  { icon: Users, label: "Community" },
+                  { icon: ExternalLink, label: "Social" }
+                ].map((social, i) => (
+                  <motion.button
+                    key={i}
+                    whileHover={{ y: -5, scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="w-12 h-12 rounded-2xl bg-white/5 flex items-center justify-center hover:bg-[#5B7AB5]/20 hover:text-white transition-all duration-300"
+                  >
+                    <social.icon className="w-5 h-5" />
+                  </motion.button>
                 ))}
               </div>
             </div>
 
-            {/* Visual Stats */}
-            <div className="grid grid-cols-2 gap-6">
-              {[
-                { value: "30%", label: "Average savings", color: "from-emerald-500 to-emerald-400" },
-                { value: "98%", label: "Forecast accuracy", color: "from-[#4A6FA5] to-[#5B7AB5]" },
-                { value: "24/7", label: "Real-time monitoring", color: "from-purple-500 to-purple-400" },
-                { value: "10x", label: "Faster insights", color: "from-amber-500 to-amber-400" }
-              ].map((stat, i) => (
-                <div
-                  key={i}
-                  className="bg-white/5 backdrop-blur-sm p-6 rounded-2xl border border-white/10 hover:border-[#4A6FA5]/50 transition-all duration-300"
-                >
-                  <div className={`text-3xl font-bold bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2`}>
-                    {stat.value}
-                  </div>
-                  <p className="text-sm text-gray-400">{stat.label}</p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ================= HOW IT WORKS ================= */}
-      <section id="how-it-works" className="py-24 px-6 sm:px-8 lg:px-10 bg-[#0A1929]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <span className="text-[#5B7AB5] font-semibold text-sm uppercase tracking-[0.2em]">Process</span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mt-4 mb-4">
-              Get started in minutes
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Simple three-step process to start optimizing your cloud infrastructure
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 relative">
             {[
-              {
-                step: "01",
-                title: "Connect your AWS",
-                description: "Securely connect your AWS account with read-only credentials in just a few clicks.",
-                icon: "🔌"
-              },
-              {
-                step: "02",
-                title: "AI analyzes everything",
-                description: "Our engine analyzes your infrastructure and identifies optimization opportunities.",
-                icon: "🤖"
-              },
-              {
-                step: "03",
-                title: "Start saving immediately",
-                description: "Get actionable recommendations and start reducing costs right away.",
-                icon: "💰"
-              }
-            ].map((item, i) => (
-              <div key={i} className="relative group">
-                <div className="bg-white/5 backdrop-blur-sm p-8 rounded-2xl border border-white/10 group-hover:border-[#4A6FA5] transition-all duration-300 group-hover:-translate-y-2">
-                  <div className="text-4xl mb-4">{item.icon}</div>
-                  <div className="text-5xl font-bold text-[#2D3A5E] mb-4">{item.step}</div>
-                  <h3 className="text-xl font-semibold text-white mb-3">{item.title}</h3>
-                  <p className="text-gray-400 text-sm leading-relaxed">{item.description}</p>
-                </div>
-                {i < 2 && (
-                  <div className="hidden md:block absolute top-1/3 -right-4 text-2xl text-[#4A6FA5]">→</div>
-                )}
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ================= PRICING SECTION ================= */}
-      <section id="pricing" className="py-24 px-6 sm:px-8 lg:px-10 bg-[#0F1F2F]">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-16">
-            <span className="text-[#5B7AB5] font-semibold text-sm uppercase tracking-[0.2em]">Pricing</span>
-            <h2 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight mt-4 mb-4">
-              Simple, transparent pricing
-            </h2>
-            <p className="text-gray-400 text-lg max-w-2xl mx-auto">
-              Start with a free trial. No credit card required.
-            </p>
-          </div>
-
-          <div className="grid md:grid-cols-3 gap-8 max-w-5xl mx-auto">
-            {[
-              {
-                name: "Starter",
-                price: "$0",
-                period: "forever",
-                description: "Perfect for small projects and testing",
-                features: [
-                  "Up to 10 AWS resources",
-                  "Basic monitoring",
-                  "7-day data retention",
-                  "Email support"
-                ],
-                buttonText: "Start Free",
-                popular: false
-              },
-              {
-                name: "Pro",
-                price: "$49",
-                period: "per month",
-                description: "For growing teams with multiple accounts",
-                features: [
-                  "Unlimited AWS resources",
-                  "Advanced analytics",
-                  "30-day data retention",
-                  "AI-powered forecasts",
-                  "Priority support",
-                  "Custom reports"
-                ],
-                buttonText: "Start 14-day trial",
-                popular: true
-              },
-              {
-                name: "Enterprise",
-                price: "Custom",
-                period: "contact us",
-                description: "For large organizations with specific needs",
-                features: [
-                  "Everything in Pro",
-                  "SLA guarantees",
-                  "Custom integrations",
-                  "Dedicated account manager",
-                  "On-premise deployment"
-                ],
-                buttonText: "Contact Sales",
-                popular: false
-              }
-            ].map((plan, i) => (
-              <div
-                key={i}
-                className={`relative rounded-2xl transition-all duration-300 hover:-translate-y-2 ${
-                  plan.popular
-                    ? "bg-gradient-to-b from-[#1A2A4A] to-[#0F1F2F] border-2 border-[#4A6FA5] shadow-2xl shadow-[#4A6FA5]/20 scale-105"
-                    : "bg-white/5 border border-white/10 hover:border-[#4A6FA5]/50 shadow-xl"
-                } p-8`}
-              >
-                {plan.popular && (
-                  <div className="absolute -top-4 left-1/2 -translate-x-1/2 bg-gradient-to-r from-[#4A6FA5] to-[#5B7AB5] text-white px-4 py-1 rounded-full text-xs font-medium shadow-lg">
-                    Most Popular
-                  </div>
-                )}
-
-                <h3 className="text-xl font-bold text-white mb-2">{plan.name}</h3>
-                <div className="mb-4">
-                  <span className="text-3xl font-bold text-white">{plan.price}</span>
-                  <span className="text-gray-400 text-sm ml-1">/{plan.period}</span>
-                </div>
-                <p className="text-gray-400 text-sm mb-6">{plan.description}</p>
-
-                <ul className="space-y-3 mb-8">
-                  {plan.features.map((feature, j) => (
-                    <li key={j} className="flex items-center gap-2 text-sm">
-                      <svg className="w-4 h-4 text-emerald-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                      </svg>
-                      <span className="text-gray-300">{feature}</span>
+              { title: "Product", links: ["Features", "Pricing", "Process", "Integrations", "Changelog"] },
+              { title: "Company", links: ["About Us", "Our Blog", "Careers", "Contact", "Press Kit"] },
+              { title: "Resources", links: ["Documentation", "API Reference", "Help Center", "Status", "Tutorials"] },
+              { title: "Legal", links: ["Privacy Policy", "Terms of Service", "Security", "Cookie Settings", "Compliance"] }
+            ].map((column, idx) => (
+              <div key={idx}>
+                <h3 className="text-white font-bold mb-6 text-sm uppercase tracking-widest">{column.title}</h3>
+                <ul className="space-y-4">
+                  {column.links.map((link, i) => (
+                    <li key={i}>
+                      <motion.a
+                        href={`/${link.toLowerCase().replace(/ /g, '-')}`}
+                        whileHover={{ x: 5, color: "#fff" }}
+                        className="hover:text-white transition-colors text-sm font-medium cursor-pointer inline-block"
+                      >
+                        {link}
+                      </motion.a>
                     </li>
                   ))}
                 </ul>
-
-                <button
-                  onClick={() => router.push(plan.name === "Enterprise" ? "/contact" : "/signup")}
-                  className={`w-full py-3 rounded-xl font-medium transition-all duration-300 ${
-                    plan.popular
-                      ? "bg-gradient-to-r from-[#2D3A5E] to-[#4A6FA5] text-white hover:shadow-xl hover:shadow-[#2D3A5E]/30 hover:scale-[1.02]"
-                      : "border border-white/20 text-white hover:bg-white/10 hover:border-white/30"
-                  }`}
-                >
-                  {plan.buttonText}
-                </button>
               </div>
             ))}
           </div>
-        </div>
-      </section>
 
-      {/* ================= CTA SECTION ================= */}
-      <section className="py-24 px-6 sm:px-8 lg:px-10 bg-gradient-to-br from-[#0A1929] to-[#1A2A4A] text-white text-center relative overflow-hidden">
-        <div className="absolute inset-0 bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjAiIGhlaWdodD0iNjAiIHZpZXdCb3g9IjAgMCA2MCA2MCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMzAgMzBoMzB2MzBIMzB6TTAgMGgzMHYzMEgweiIgZmlsbD0ibm9uZSIgc3Ryb2tlPSIjRkZGRkZGIiBzdHJva2Utb3BhY2l0eT0iMC4wNSIgc3Ryb2tlLXdpZHRoPSIxIi8+PC9zdmc+')] opacity-20"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-gradient-to-r from-[#2D3A5E]/30 to-[#4A6FA5]/30 rounded-full blur-3xl"></div>
-
-        <div className="relative max-w-3xl mx-auto">
-          <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold mb-6 tracking-tight">
-            Start optimizing today
-          </h2>
-          <p className="text-gray-300 text-xl mb-10 max-w-2xl mx-auto">
-            Join hundreds of companies already saving millions on AWS. Your 14-day free trial starts now.
-          </p>
-
-          <div className="flex flex-col sm:flex-row justify-center gap-4">
-            <button
-              onClick={() => router.push("/signup")}
-              className="group bg-white text-[#0A1929] px-10 py-5 rounded-xl font-semibold text-lg hover:shadow-2xl hover:scale-[1.02] transition-all duration-300 flex items-center justify-center gap-2"
-            >
-              Get Started Free
-              <svg className="w-5 h-5 group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-              </svg>
-            </button>
-            <button
-              onClick={() => router.push("/contact")}
-              className="border-2 border-white/20 px-10 py-5 rounded-xl font-semibold text-lg text-white hover:bg-white/10 hover:border-white/30 transition-all duration-300 backdrop-blur-sm"
-            >
-              Talk to Sales
-            </button>
-          </div>
-
-          <p className="text-sm text-gray-400 mt-8 flex items-center justify-center gap-2">
-            <svg className="w-4 h-4 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
-            </svg>
-            No credit card required · 14-day free trial · Cancel anytime
-          </p>
-        </div>
-      </section>
-
-      {/* ================= ENHANCED FOOTER ================= */}
-      <footer className="bg-[#0A1929] text-gray-400 px-6 sm:px-8 lg:px-10 py-16 border-t border-white/10">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-8 lg:gap-12 mb-12">
-
-            {/* Brand Column - Full width on mobile */}
-            <div className="col-span-1 sm:col-span-2 lg:col-span-1">
-              <div className="flex items-center gap-3 mb-4">
-                <div className="w-10 h-10 bg-gradient-to-br from-[#2D3A5E] to-[#4A6FA5] rounded-xl flex items-center justify-center shadow-lg">
-                  <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.8} d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z" />
-                  </svg>
-                </div>
-                <span className="text-xl font-bold text-white">cloudintel<span className="text-[#5B7AB5]">.</span></span>
-              </div>
-              <p className="text-sm text-gray-400 leading-relaxed mb-6 max-w-xs">
-                AI-powered AWS monitoring and optimization platform for modern cloud infrastructure. Trusted by engineering teams worldwide.
-              </p>
-              <div className="flex gap-4">
-                <a href="#" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg hover:bg-white/10 hover:text-white transition-all duration-300 hover:scale-110">
-                  <span>𝕏</span>
-                </a>
-                <a href="#" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg hover:bg-white/10 hover:text-white transition-all duration-300 hover:scale-110">
-                  <span>in</span>
-                </a>
-                <a href="#" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg hover:bg-white/10 hover:text-white transition-all duration-300 hover:scale-110">
-                  <span>🐙</span>
-                </a>
-                <a href="#" className="w-10 h-10 rounded-xl bg-white/5 flex items-center justify-center text-lg hover:bg-white/10 hover:text-white transition-all duration-300 hover:scale-110">
-                  <span>▶</span>
-                </a>
-              </div>
-            </div>
-
-            {/* Product Links */}
-            <div>
-              <h3 className="text-white font-semibold mb-4 text-base">Product</h3>
-              <ul className="space-y-3">
-                <li><button onClick={() => scrollToSection("features")} className="text-gray-400 hover:text-white transition text-sm">Features</button></li>
-                <li><button onClick={() => scrollToSection("pricing")} className="text-gray-400 hover:text-white transition text-sm">Pricing</button></li>
-                <li><button onClick={() => scrollToSection("how-it-works")} className="text-gray-400 hover:text-white transition text-sm">How it Works</button></li>
-                <li><a href="/integrations" className="text-gray-400 hover:text-white transition text-sm">Integrations</a></li>
-                <li><a href="/changelog" className="text-gray-400 hover:text-white transition text-sm">Changelog</a></li>
-              </ul>
-            </div>
-
-            {/* Company Links */}
-            <div>
-              <h3 className="text-white font-semibold mb-4 text-base">Company</h3>
-              <ul className="space-y-3">
-                <li><a href="/about" className="text-gray-400 hover:text-white transition text-sm">About</a></li>
-                <li><a href="/blog" className="text-gray-400 hover:text-white transition text-sm">Blog</a></li>
-                <li><a href="/careers" className="text-gray-400 hover:text-white transition text-sm">Careers</a></li>
-                <li><a href="/contact" className="text-gray-400 hover:text-white transition text-sm">Contact</a></li>
-                <li><a href="/press" className="text-gray-400 hover:text-white transition text-sm">Press</a></li>
-              </ul>
-            </div>
-
-            {/* Resources Links */}
-            <div>
-              <h3 className="text-white font-semibold mb-4 text-base">Resources</h3>
-              <ul className="space-y-3">
-                <li><a href="/docs" className="text-gray-400 hover:text-white transition text-sm">Documentation</a></li>
-                <li><a href="/api" className="text-gray-400 hover:text-white transition text-sm">API Reference</a></li>
-                <li><a href="/support" className="text-gray-400 hover:text-white transition text-sm">Support</a></li>
-                <li><a href="/status" className="text-gray-400 hover:text-white transition text-sm">System Status</a></li>
-                <li><a href="/tutorials" className="text-gray-400 hover:text-white transition text-sm">Tutorials</a></li>
-              </ul>
-            </div>
-
-            {/* Legal Links */}
-            <div>
-              <h3 className="text-white font-semibold mb-4 text-base">Legal</h3>
-              <ul className="space-y-3">
-                <li><a href="/privacy" className="text-gray-400 hover:text-white transition text-sm">Privacy</a></li>
-                <li><a href="/terms" className="text-gray-400 hover:text-white transition text-sm">Terms</a></li>
-                <li><a href="/security" className="text-gray-400 hover:text-white transition text-sm">Security</a></li>
-                <li><a href="/cookies" className="text-gray-400 hover:text-white transition text-sm">Cookies</a></li>
-                <li><a href="/compliance" className="text-gray-400 hover:text-white transition text-sm">Compliance</a></li>
-              </ul>
-            </div>
-          </div>
-
-          {/* Bottom Bar - Enhanced */}
-          <div className="pt-8 border-t border-white/10 flex flex-col lg:flex-row justify-between items-center gap-6">
-            <p className="text-gray-500 text-sm order-2 lg:order-1">
-              © {new Date().getFullYear()} Cloud Intelligence Platform. All rights reserved.
+          <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
+            <p className="text-xs font-semibold uppercase tracking-widest order-2 md:order-1">
+              © {new Date().getFullYear()} Cloud Intelligence Platform. Designed for performance.
             </p>
-            
-            <div className="flex flex-wrap items-center justify-center gap-6 order-1 lg:order-2">
-              <a href="/privacy" className="text-gray-500 hover:text-gray-300 text-sm transition">Privacy</a>
-              <a href="/terms" className="text-gray-500 hover:text-gray-300 text-sm transition">Terms</a>
-              <a href="/cookies" className="text-gray-500 hover:text-gray-300 text-sm transition">Cookies</a>
-              <a href="/sitemap" className="text-gray-500 hover:text-gray-300 text-sm transition">Sitemap</a>
-            </div>
-          </div>
 
-          {/* Trust Badges - Enhanced */}
-          <div className="flex flex-wrap items-center justify-center gap-8 mt-8 pt-8 border-t border-white/5">
-            <span className="text-xs text-gray-600 hover:text-gray-400 transition">SOC 2 Type II</span>
-            <span className="text-xs text-gray-600 hover:text-gray-400 transition">GDPR Compliant</span>
-            <span className="text-xs text-gray-600 hover:text-gray-400 transition">AWS Partner</span>
-            <span className="text-xs text-gray-600 hover:text-gray-400 transition">ISO 27001</span>
-            <span className="text-xs text-gray-600 hover:text-gray-400 transition">HIPAA Ready</span>
+            <div className="flex flex-wrap items-center justify-center gap-8 order-1 md:order-2">
+              <motion.a
+                href="/trust"
+                whileHover={{ color: "#5B7AB5" }}
+                className="text-xs font-bold uppercase tracking-[0.2em] hover:text-[#5B7AB5] transition-colors"
+              >
+                Trust Center
+              </motion.a>
+              <motion.a
+                href="/sitemap"
+                whileHover={{ color: "#5B7AB5" }}
+                className="text-xs font-bold uppercase tracking-[0.2em] hover:text-[#5B7AB5] transition-colors"
+              >
+                Sitemap
+              </motion.a>
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                className="flex items-center gap-4 bg-white/5 px-4 py-2 rounded-full border border-white/5"
+              >
+                <motion.div
+                  animate={{ scale: [1, 1.2, 1] }}
+                  transition={{ duration: 2, repeat: Infinity }}
+                  className="w-2 h-2 rounded-full bg-emerald-500"
+                />
+                <span className="text-[10px] font-black uppercase tracking-tighter">Status: Protected</span>
+              </motion.div>
+            </div>
           </div>
         </div>
       </footer>
-
-      <style jsx>{`
-        @keyframes pulse {
-          0%, 100% { opacity: 0.5; }
-          50% { opacity: 0.8; }
-        }
-        .animate-pulse {
-          animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
-        }
-        .delay-1000 {
-          animation-delay: 1s;
-        }
-      `}</style>
     </div>
   );
 }
