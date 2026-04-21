@@ -107,6 +107,12 @@ def save_ec2_instances(db: Session, instances_data):
         for inst in db.query(EC2Instance).all()
     }
 
+    # Delete instances from DB that are no longer in AWS
+    new_ids = {instance["instance_id"] for instance in instances_data}
+    for instance_id, inst_obj in existing_instances.items():
+        if instance_id not in new_ids:
+            db.delete(inst_obj)
+
     for instance in instances_data:
 
         cpu = get_instance_cpu_utilization(instance["instance_id"])
@@ -118,7 +124,7 @@ def save_ec2_instances(db: Session, instances_data):
         if existing:
             existing.instance_type = instance["instance_type"]
             existing.state = instance["state"]
-            existing.cpu_utilization = cpu
+            existing.average_cpu = cpu
             existing.cost = cost
             existing.risk = risk
 
@@ -128,7 +134,7 @@ def save_ec2_instances(db: Session, instances_data):
                     instance_id=instance["instance_id"],
                     instance_type=instance["instance_type"],
                     state=instance["state"],
-                    cpu_utilization=cpu,
+                    average_cpu=cpu,
                     cost=cost,
                     risk=risk
                 )
@@ -150,7 +156,7 @@ def sync_cpu_metrics(db: Session):
         db.add(
             CPUMetric(
                 instance_id=inst.instance_id,
-                cpu_utilization=cpu
+                average_cpu=cpu
             )
         )
 
@@ -184,7 +190,7 @@ def get_ec2_dashboard(db: Session):
                 "id": i.instance_id,
                 "type": i.instance_type,
                 "state": i.state,
-                "cpu": i.cpu_utilization,
+                "cpu": i.average_cpu,
                 "cost": i.cost,
                 "risk": i.risk
             }
