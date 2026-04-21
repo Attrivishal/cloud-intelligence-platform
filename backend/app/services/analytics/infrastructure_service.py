@@ -34,7 +34,7 @@ def get_infrastructure_details(db: Session):
             stopped_instances += 1
 
         # Count region
-        region = instance.region if hasattr(instance, "region") else "unknown"
+        region = instance.region if (instance.region is not None) else "unknown"
         region_distribution[region] += 1
 
         # Get CPU metrics for this instance
