@@ -143,9 +143,9 @@ export default function RiskPage() {
   });
 
   s3.forEach((b: any) => {
-  if (!b) return;
-  const size = size || 0;
-  const objects = objects ?? Math.floor(Math.random() * 10000);
+    if (!b) return;
+    const size = b.size || 0;
+    const objects = b.objects ?? 0;
     if (!b) return;
     if ((size || 0) > 100000000) {
       risks.push({
@@ -586,10 +586,10 @@ export default function RiskPage() {
                 <p className="text-4xl font-bold text-red-400 mb-2">${totalRiskCost.toFixed(2)}</p>
                 <p className="text-xs text-gray-400">Estimated wasted cost per month</p>
                 <div className="mt-6 space-y-3">
-                  {serviceBreakdown.EC2 > 0 && <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg"><div className="flex items-center gap-2"><Server className="w-4 h-4 text-blue-400" /><span className="text-sm text-gray-300">EC2 Risks</span></div><span className="text-red-400 font-medium">${(serviceBreakdown.EC2 * 10).toFixed(2)}</span></div>}
-                  {serviceBreakdown.Lambda > 0 && <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg"><div className="flex items-center gap-2"><Layers className="w-4 h-4 text-purple-400" /><span className="text-sm text-gray-300">Lambda Risks</span></div><span className="text-red-400 font-medium">${(serviceBreakdown.Lambda * 5).toFixed(2)}</span></div>}
-                  {serviceBreakdown.RDS > 0 && <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg"><div className="flex items-center gap-2"><Database className="w-4 h-4 text-yellow-400" /><span className="text-sm text-gray-300">RDS Risks</span></div><span className="text-red-400 font-medium">${(serviceBreakdown.RDS * 15).toFixed(2)}</span></div>}
-                  {serviceBreakdown.S3 > 0 && <div className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg"><div className="flex items-center gap-2"><HardDrive className="w-4 h-4 text-green-400" /><span className="text-sm text-gray-300">S3 Risks</span></div><span className="text-red-400 font-medium">${(serviceBreakdown.S3 * 5).toFixed(2)}</span></div>}
+                  {serviceBreakdown.EC2 > 0 && <div key="ec2-risk" className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg"><div className="flex items-center gap-2"><Server className="w-4 h-4 text-blue-400" /><span className="text-sm text-gray-300">EC2 Risks</span></div><span className="text-red-400 font-medium">${(serviceBreakdown.EC2 * 10).toFixed(2)}</span></div>}
+                  {serviceBreakdown.Lambda > 0 && <div key="lambda-risk" className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg"><div className="flex items-center gap-2"><Layers className="w-4 h-4 text-purple-400" /><span className="text-sm text-gray-300">Lambda Risks</span></div><span className="text-red-400 font-medium">${(serviceBreakdown.Lambda * 5).toFixed(2)}</span></div>}
+                  {serviceBreakdown.RDS > 0 && <div key="rds-risk" className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg"><div className="flex items-center gap-2"><Database className="w-4 h-4 text-yellow-400" /><span className="text-sm text-gray-300">RDS Risks</span></div><span className="text-red-400 font-medium">${(serviceBreakdown.RDS * 15).toFixed(2)}</span></div>}
+                  {serviceBreakdown.S3 > 0 && <div key="s3-risk" className="flex justify-between items-center p-3 bg-slate-800/30 rounded-lg"><div className="flex items-center gap-2"><HardDrive className="w-4 h-4 text-green-400" /><span className="text-sm text-gray-300">S3 Risks</span></div><span className="text-red-400 font-medium">${(serviceBreakdown.S3 * 5).toFixed(2)}</span></div>}
                 </div>
               </div>
             </div>
@@ -604,13 +604,13 @@ export default function RiskPage() {
                     <InsightCard key={idx} type={insight.includes("⚠") ? "warning" : insight.includes("✅") ? "success" : "info"} title={insight.split(":")[0] || "Insight"} message={insight} />
                   )) : (
                     <>
-                      {serviceBreakdown.Lambda > 0 && <InsightCard type="warning" title="Unused Lambda Functions" message={`Remove ${serviceBreakdown.Lambda} unused Lambda functions to save $${(serviceBreakdown.Lambda * 5).toFixed(2)}/month`} />}
-                      {serviceBreakdown.EC2 > 0 && <InsightCard type="warning" title="EC2 Risks Detected" message={`${serviceBreakdown.EC2} EC2 instances need attention to optimize costs`} />}
-                      {serviceBreakdown.S3 > 0 && <InsightCard type="info" title="S3 Optimization Opportunity" message="Review bucket lifecycle policies to reduce storage costs" />}
-                      {serviceBreakdown.RDS > 0 && <InsightCard type="danger" title="RDS Issues Detected" message={`${serviceBreakdown.RDS} databases need immediate attention`} />}
-                      {severityBreakdown.high > 0 && <InsightCard type="danger" title="Critical Risks" message={`${severityBreakdown.high} high-severity risks require immediate action`} />}
-                      {risks.length === 0 && <InsightCard type="success" title="All Systems Healthy" message="No risks detected in your infrastructure. Great job!" />}
-                      {totalRiskCost > 100 && <InsightCard type="warning" title="High Waste Detected" message={`Potential savings of $${totalRiskCost.toFixed(2)}/month - review recommendations`} />}
+                      {serviceBreakdown.Lambda > 0 && <InsightCard key="lambda-insight" type="warning" title="Unused Lambda Functions" message={`Remove ${serviceBreakdown.Lambda} unused Lambda functions to save $${(serviceBreakdown.Lambda * 5).toFixed(2)}/month`} />}
+                      {serviceBreakdown.EC2 > 0 && <InsightCard key="ec2-insight" type="warning" title="EC2 Risks Detected" message={`${serviceBreakdown.EC2} EC2 instances need attention to optimize costs`} />}
+                      {serviceBreakdown.S3 > 0 && <InsightCard key="s3-insight" type="info" title="S3 Optimization Opportunity" message="Review bucket lifecycle policies to reduce storage costs" />}
+                      {serviceBreakdown.RDS > 0 && <InsightCard key="rds-insight" type="danger" title="RDS Issues Detected" message={`${serviceBreakdown.RDS} databases need immediate attention`} />}
+                      {severityBreakdown.high > 0 && <InsightCard key="high-risk-insight" type="danger" title="Critical Risks" message={`${severityBreakdown.high} high-severity risks require immediate action`} />}
+                      {risks.length === 0 && <InsightCard key="healthy-insight" type="success" title="All Systems Healthy" message="No risks detected in your infrastructure. Great job!" />}
+                      {totalRiskCost > 100 && <InsightCard key="high-waste-insight" type="warning" title="High Waste Detected" message={`Potential savings of $${totalRiskCost.toFixed(2)}/month - review recommendations`} />}
                     </>
                   )}
                 </div>
