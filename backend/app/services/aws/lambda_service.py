@@ -13,7 +13,6 @@ AWS_REGION = os.getenv("AWS_REGION")
 lambda_client = boto3.client("lambda", region_name=AWS_REGION)
 cloudwatch = boto3.client("cloudwatch", region_name=AWS_REGION)
 
-
 # ============================
 # 1. FETCH LAMBDA FUNCTIONS
 # ============================
@@ -121,6 +120,12 @@ def save_lambda_functions(db: Session, functions_data):
         f.name: f for f in db.query(LambdaFunction).all()
     }
 
+    # Delete Lambda functions from DB that are no longer in AWS
+    new_names = {fn["name"] for fn in functions_data}
+    for name, fn_obj in existing.items():
+        if name not in new_names:
+            db.delete(fn_obj)
+
     for fn in functions_data:
 
         if fn["name"] in existing:
@@ -163,5 +168,17 @@ def get_lambda_dashboard(db: Session):
         "total_functions": total,
         "total_cost": total_cost,
         "unused_functions": unused,
-        "high_risk": high_risk
+        "high_risk": high_risk,
+        "functions": [
+            {
+                "name": f.name,
+                "runtime": f.runtime,
+                "memory": f.memory,
+                "timeout": f.timeout,
+                "invocations": f.invocations,
+                "cost": f.cost,
+                "risk": f.risk
+            }
+            for f in functions
+        ]
     }
