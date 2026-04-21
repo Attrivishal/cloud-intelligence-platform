@@ -1,5 +1,5 @@
-from pydantic import BaseModel, RootModel
-from typing import List, Dict
+from pydantic import BaseModel, RootModel, Field
+from typing import List, Dict, Optional
 
 
 # =====================================================
@@ -42,7 +42,7 @@ class InfrastructureInstanceItem(BaseModel):
     instance_id: str
     instance_type: str
     state: str
-    region: str
+    region: Optional[str] = ""
     average_cpu: float
     estimated_monthly_cost: float
 
@@ -56,7 +56,7 @@ class InfrastructureSummary(BaseModel):
 class InfrastructureResponseSchema(BaseModel):
     summary: InfrastructureSummary
     instances: List[InfrastructureInstanceItem]
-    region_distribution: Dict[str, int]
+    region_distribution: Dict[Optional[str], int]
 
 
 # =====================================================
@@ -137,6 +137,72 @@ class CloudHealthSchema(BaseModel):
 
 
 # =====================================================
+# SERVICE SPECIFIC SCHEMAS (REQUIRED BY FRONTEND)
+# =====================================================
+
+class EC2InstanceItem(BaseModel):
+    id: str
+    type: str
+    state: str
+    cpu: float
+    cost: float
+    risk: str
+
+class EC2Schema(BaseModel):
+    total_cost: float
+    running: int
+    total_instances: int
+    underutilized: int
+    overloaded: int
+    instances: List[EC2InstanceItem]
+
+class S3BucketItem(BaseModel):
+    name: str
+    size: float
+    objects: int
+    cost: float
+    status: str
+
+class S3Schema(BaseModel):
+    total_cost: float
+    total_buckets: int
+    buckets: List[S3BucketItem]
+
+class RDSInstanceItem(BaseModel):
+    id: str
+    engine: str
+    type: str = Field(alias="class")
+    state: str = Field(alias="status")
+    storage: float
+    cost: float
+    risk: str
+
+    class Config:
+        populate_by_name = True
+
+class RDSSchema(BaseModel):
+    total_cost: float
+    total_databases: int
+    low_storage: int
+    instances: List[RDSInstanceItem]
+
+class LambdaFunctionItem(BaseModel):
+    name: str
+    runtime: str
+    memory: int
+    timeout: int = 0
+    invocations: int = 0
+    cost: float = 0.0
+    risk: str = "OPTIMAL"
+
+class LambdaSchema(BaseModel):
+    total_cost: float
+    total_functions: int
+    unused_functions: int
+    functions: List[LambdaFunctionItem]
+
+
+# =====================================================
 # DASHBOARD OVERVIEW (MAIN RESPONSE)
 # =====================================================
 
@@ -148,6 +214,12 @@ class DashboardOverviewSchema(BaseModel):
     optimization: OptimizationSummarySchema
     sustainability: SustainabilityReportSchema
     cloud_health: CloudHealthSchema
+    
+    # 🔥 NEW SERVICE SPECIFIC KEYS
+    ec2: EC2Schema
+    s3: S3Schema
+    rds: RDSSchema
+    lambda_details: LambdaSchema = Field(alias="lambda")
 
 
 # =====================================================
