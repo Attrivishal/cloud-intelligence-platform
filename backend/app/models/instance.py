@@ -19,7 +19,7 @@ class EC2Instance(Base):
     # 🔹 Metadata
     launch_time = Column(DateTime)
 
-    # 🔥 NEW (IMPORTANT)
-    cpu_utilization = Column(Float)
+    # 🔥 NEW (IMPORTANT) - CONSISTENT WITH CPUMetric
+    average_cpu = Column(Float)
     cost = Column(Float)
     risk = Column(String)
