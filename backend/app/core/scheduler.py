@@ -19,6 +19,21 @@ from app.services.aws.cost_explorer_service import (
     save_daily_costs
 )
 
+from app.services.aws.s3_service import (
+    get_s3_buckets,
+    save_s3_buckets
+)
+
+from app.services.aws.rds_service import (
+    get_rds_instances,
+    save_rds_instances
+)
+
+from app.services.aws.lambda_service import (
+    get_lambda_functions,
+    save_lambda_functions
+)
+
 
 # =====================================================
 # SYNC FUNCTION
@@ -37,6 +52,16 @@ def scheduled_sync():
         save_daily_costs(db, cost_data)
 
         sync_cpu_metrics(db)
+
+        # 🔥 NEW AWS SERVICES
+        buckets = get_s3_buckets()
+        save_s3_buckets(db, buckets)
+
+        rds_instances = get_rds_instances()
+        save_rds_instances(db, rds_instances)
+
+        functions = get_lambda_functions()
+        save_lambda_functions(db, functions)
 
         print("Sync completed successfully")
 
