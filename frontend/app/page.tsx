@@ -33,7 +33,10 @@ import {
   ArrowUpRight,
   Play,
   Pause,
-  Maximize2
+  Maximize2,
+  Code2,
+  Braces,
+  Terminal,
 } from "lucide-react";
 
 // Custom hook for mouse parallax
@@ -59,8 +62,10 @@ const CustomCursor = () => {
   const [position, setPosition] = useState({ x: 0, y: 0 });
   const [isHovering, setIsHovering] = useState(false);
   const [isVisible, setIsVisible] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
+    setMounted(true);
     const moveCursor = (e: MouseEvent) => {
       setPosition({ x: e.clientX, y: e.clientY });
       if (!isVisible) setIsVisible(true);
@@ -93,7 +98,7 @@ const CustomCursor = () => {
     };
   }, [isVisible]);
 
-  if (typeof window === 'undefined') return null;
+  if (!mounted) return null;
 
   return (
     <motion.div
@@ -114,6 +119,19 @@ const CustomCursor = () => {
       <div className={`w-6 h-6 rounded-full border-2 border-[#5B7AB5] transition-all duration-300 ${isHovering ? 'bg-[#5B7AB5]/20 scale-150' : ''
         }`} />
     </motion.div>
+  );
+};
+
+// Scroll Progress Indicator
+const ScrollProgress = () => {
+  const { scrollYProgress } = useScroll();
+  const scaleX = useTransform(scrollYProgress, [0, 1], [0, 1]);
+
+  return (
+    <motion.div
+      className="fixed top-0 left-0 right-0 h-1 bg-gradient-to-r from-[#5B7AB5] to-[#7B9ACF] z-[100] origin-left"
+      style={{ scaleX }}
+    />
   );
 };
 
@@ -227,7 +245,7 @@ const GlowingCard = ({ children, className = "", delay = 0 }: any) => {
     <motion.div
       initial={{ opacity: 0, y: 30 }}
       whileInView={{ opacity: 1, y: 0 }}
-      viewport={{ once: true }}
+      viewport={{ once: true, margin: "-100px" }}
       transition={{ delay, duration: 0.6, ease: "easeOut" }}
       whileHover={{ y: -10 }}
       className={`group relative bg-white/5 backdrop-blur-xl rounded-[2rem] border border-white/5 hover:border-[#5B7AB5]/40 transition-all duration-500 overflow-hidden ${className}`}
@@ -239,22 +257,64 @@ const GlowingCard = ({ children, className = "", delay = 0 }: any) => {
   );
 };
 
+// Section header component
+const SectionHeader = ({ title, subtitle, badge }: { title: React.ReactNode; subtitle?: string; badge?: string }) => (
+  <motion.div
+    initial={{ opacity: 0, y: 30 }}
+    whileInView={{ opacity: 1, y: 0 }}
+    viewport={{ once: true }}
+    className="text-center mb-16"
+  >
+    {badge && (
+      <span className="text-[#5B7AB5] font-black text-sm uppercase tracking-[0.4em] mb-4 block">{badge}</span>
+    )}
+    <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight mb-6">
+      {title}
+    </h2>
+    {subtitle && (
+      <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed">{subtitle}</p>
+    )}
+  </motion.div>
+);
+
 export default function Home() {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
-  const [activeTestimonial, setActiveTestimonial] = useState(0);
+  const [activeSection, setActiveSection] = useState("");
   const { scrollYProgress } = useScroll();
   const mousePosition = useMouseParallax();
+  const mainRef = useRef<HTMLElement>(null);
 
-  const opacity = useTransform(scrollYProgress, [0, 0.2], [1, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.2], [1, 0.95]);
-  const y = useTransform(scrollYProgress, [0, 0.2], [0, -50]);
+  // Parallax transforms
+  const headerOpacity = useTransform(scrollYProgress, [0, 0.15], [1, 0.9]);
+  const heroScale = useTransform(scrollYProgress, [0, 0.2], [1, 0.98]);
+  const heroY = useTransform(scrollYProgress, [0, 0.2], [0, -30]);
+
+  // Navbar background opacity based on scroll
+  const navbarBgOpacity = useTransform(scrollYProgress, [0, 0.05], [0, 0.95]);
+  const navbarBlur = useTransform(scrollYProgress, [0, 0.05], [0, 16]);
 
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 10);
+      setIsScrolled(window.scrollY > 50);
+
+      // Track active section for navbar highlighting
+      const sections = ['features', 'benefits', 'how-it-works', 'pricing', 'vision'];
+      const scrollPosition = window.scrollY + 200;
+
+      for (const section of sections) {
+        const element = document.getElementById(section);
+        if (element) {
+          const { offsetTop, offsetHeight } = element;
+          if (scrollPosition >= offsetTop && scrollPosition < offsetTop + offsetHeight) {
+            setActiveSection(section);
+            break;
+          }
+        }
+      }
     };
+
     window.addEventListener("scroll", handleScroll);
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
@@ -287,8 +347,9 @@ export default function Home() {
     <div className="min-h-screen bg-[#0A1929] overflow-x-hidden">
       <CustomCursor />
       <ParticleBackground />
+      <ScrollProgress />
 
-      {/* Animated gradient orbs */}
+      {/* Animated gradient orbs with parallax */}
       <div className="fixed inset-0 overflow-hidden pointer-events-none">
         <motion.div
           className="absolute top-[20%] left-[10%] w-[500px] h-[500px] rounded-full bg-[#5B7AB5]/10 blur-[120px]"
@@ -316,13 +377,16 @@ export default function Home() {
         />
       </div>
 
-      {/* Header with enhanced effects */}
+      {/* Header with enhanced scrolling effects */}
       <motion.header
-        style={{ y }}
         className={`fixed top-0 w-full z-50 transition-all duration-500 ${isScrolled
-            ? "bg-[#0A1929]/90 backdrop-blur-2xl border-b border-white/10 shadow-2xl shadow-black/50"
+            ? "border-b border-white/10 shadow-2xl shadow-black/50"
             : "bg-transparent"
           }`}
+        style={{
+          backgroundColor: isScrolled ? "rgba(10, 25, 41, 0.95)" : "rgba(10, 25, 41, 0)",
+          backdropFilter: `blur(${isScrolled ? "16px" : "0px"})`,
+        }}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16 sm:h-20">
@@ -344,26 +408,32 @@ export default function Home() {
               </span>
             </motion.div>
 
-            <nav className="hidden md:flex items-center gap-10 lg:gap-12 text-base lg:text-lg font-medium">
-              {['Features', 'Benefits', 'How it Works', 'Pricing'].map((item, idx) => (
-                <motion.button
-                  key={item}
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  whileHover={{ scale: 1.05 }}
-                  onClick={() => scrollToSection(item.toLowerCase().replace(/ /g, '-'))}
-                  className="text-gray-400 hover:text-white transition-colors relative group"
-                >
-                  {item}
-                  <motion.span
-                    className="absolute -bottom-1 left-0 h-0.5 bg-[#5B7AB5]"
-                    initial={{ width: 0 }}
-                    whileHover={{ width: "100%" }}
-                    transition={{ duration: 0.3 }}
-                  />
-                </motion.button>
-              ))}
+            <nav className="hidden md:flex items-center gap-8 lg:gap-10 text-base font-medium">
+              {['Features', 'Benefits', 'How it Works', 'Pricing', 'Vision'].map((item, idx) => {
+                const sectionId = item.toLowerCase().replace(/ /g, '-');
+                const isActive = activeSection === sectionId;
+                return (
+                  <motion.button
+                    key={item}
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.1 }}
+                    whileHover={{ scale: 1.05 }}
+                    onClick={() => scrollToSection(sectionId)}
+                    className={`relative transition-colors ${isActive ? "text-white" : "text-gray-400 hover:text-white"
+                      }`}
+                  >
+                    {item}
+                    <motion.span
+                      className="absolute -bottom-1 left-0 h-0.5 bg-[#5B7AB5] rounded-full"
+                      initial={{ width: 0 }}
+                      animate={{ width: isActive ? "100%" : 0 }}
+                      whileHover={{ width: "100%" }}
+                      transition={{ duration: 0.3 }}
+                    />
+                  </motion.button>
+                );
+              })}
             </nav>
 
             <motion.div
@@ -396,7 +466,7 @@ export default function Home() {
               </motion.button>
             </motion.div>
 
-            {/* Mobile menu button with animation */}
+            {/* Mobile menu button */}
             <motion.button
               whileTap={{ scale: 0.9 }}
               onClick={() => setIsMenuOpen(!isMenuOpen)}
@@ -426,7 +496,7 @@ export default function Home() {
             </motion.button>
           </div>
 
-          {/* Enhanced mobile menu */}
+          {/* Mobile menu */}
           <AnimatePresence>
             {isMenuOpen && (
               <motion.div
@@ -437,7 +507,7 @@ export default function Home() {
                 className="md:hidden py-6 border-t border-white/10 bg-[#0A1929]/95 backdrop-blur-2xl overflow-hidden"
               >
                 <div className="flex flex-col space-y-4 px-2">
-                  {['Features', 'Benefits', 'How it Works', 'Pricing'].map((item, i) => (
+                  {['Features', 'Benefits', 'How it Works', 'Pricing', 'Vision'].map((item, i) => (
                     <motion.button
                       key={item}
                       initial={{ opacity: 0, x: -20 }}
@@ -476,8 +546,11 @@ export default function Home() {
         </div>
       </motion.header>
 
-      {/* Hero Section with 3D tilt effect */}
-      <section className="relative pt-36 pb-28 px-6 sm:px-8 lg:px-10 overflow-hidden">
+      {/* Hero Section with scroll-based animations */}
+      <motion.section
+        className="relative pt-36 pb-28 px-6 sm:px-8 lg:px-10 overflow-hidden"
+        style={{ scale: heroScale, y: heroY }}
+      >
         <div className="relative max-w-6xl mx-auto">
           <motion.div
             variants={staggerContainer}
@@ -495,11 +568,11 @@ export default function Home() {
               >
                 <Sparkles className="w-4 h-4 text-[#5B7AB5]" />
               </motion.div>
-              <span className="text-sm font-medium text-[#5B7AB5] tracking-wide uppercase">Intelligent Cloud Analytics Platform</span>
+              <span className="text-sm font-medium text-[#5B7AB5] tracking-wide uppercase">Open Source FinOps Project</span>
             </motion.div>
 
             <motion.h1 variants={fadeIn} className="text-5xl sm:text-6xl md:text-8xl font-bold leading-[1.1] tracking-tight mb-8">
-              <span className="text-white">Master Your AWS</span>
+              <span className="text-white">Real-Time AWS</span>
               <motion.span
                 className="block mt-2 bg-gradient-to-r from-[#4A6FA5] via-[#5B7AB5] to-[#7B9ACF] bg-clip-text text-transparent"
                 animate={{
@@ -508,16 +581,16 @@ export default function Home() {
                 transition={{ duration: 10, repeat: Infinity, ease: "linear" }}
                 style={{ backgroundSize: "200% auto" }}
               >
-                Cost & Performance
+                Resource Sync
               </motion.span>
             </motion.h1>
 
             <motion.p variants={fadeIn} className="text-xl md:text-2xl text-gray-400 mb-6 max-w-2xl mx-auto leading-relaxed">
-              Real-time monitoring, AI-powered forecasting, and automated optimization — all in one unified platform.
+              Multi-account infrastructure insights, automated risk detection, and cost optimization — built completely from scratch.
             </motion.p>
 
             <motion.p variants={fadeIn} className="text-base text-gray-500 mb-12 max-w-xl mx-auto">
-              Get complete visibility, predict costs with 98% accuracy, and eliminate waste with data-driven insights.
+              Securely integrate via Boto3 to obtain an unfiltered, unified view of your EC2 instances, S3 storage, RDS databases, and Lambda functions.
             </motion.p>
 
             <motion.div variants={fadeIn} className="flex flex-col sm:flex-row justify-center gap-5">
@@ -551,16 +624,16 @@ export default function Home() {
               </motion.button>
             </motion.div>
 
-            {/* Animated metrics with counters */}
+            {/* Animated metrics */}
             <motion.div
               variants={staggerContainer}
               className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-8 mt-24"
             >
               {[
-                { value: "30", label: "Avg. Cost Reduction", icon: TrendingUp, suffix: "%", color: "text-emerald-400" },
-                { value: "98", label: "Forecast Accuracy", icon: Target, suffix: "%", color: "text-[#5B7AB5]" },
-                { value: "Real-time", label: "Monitoring", icon: Zap, suffix: "", color: "text-amber-400" },
-                { value: "AI-Powered", label: "Optimization", icon: Cpu, suffix: "", color: "text-purple-400" }
+                { value: "3", label: "Active Services", icon: Cloud, suffix: "", color: "text-[#5B7AB5]" },
+                { value: "100", label: "Inventory Accuracy", icon: Target, suffix: "%", color: "text-emerald-400" },
+                { value: "24", label: "Sync Monitoring", icon: Zap, suffix: "/7", color: "text-amber-400" },
+                { value: "100", label: "Security Focused", icon: ShieldCheck, suffix: "%", color: "text-purple-400" }
               ].map((metric, i) => (
                 <motion.div
                   key={i}
@@ -575,23 +648,20 @@ export default function Home() {
                     <metric.icon className="w-6 h-6" />
                   </motion.div>
                   <div className="text-3xl font-black text-white mb-1 tracking-tight">
-                    {metric.value === "Real-time" || metric.value === "AI-Powered" ?
-                      metric.value :
-                      <AnimatedCounter value={metric.value} suffix={metric.suffix} />
-                    }
+                    <AnimatedCounter value={metric.value} suffix={metric.suffix} />
                   </div>
                   <div className="text-sm font-medium text-gray-500 uppercase tracking-widest leading-tight">{metric.label}</div>
                 </motion.div>
               ))}
             </motion.div>
 
-            {/* Tech stack with hover effects */}
+            {/* Tech stack */}
             <motion.div
               variants={fadeIn}
               className="flex flex-wrap items-center justify-center gap-6 mt-16 pt-10 border-t border-white/5"
             >
               <span className="text-sm text-gray-600 font-bold uppercase tracking-[0.3em]">Built with</span>
-              {["AWS SDK", "FastAPI", "PostgreSQL", "ML Models"].map((tech, i) => (
+              {["AWS Integration", "FastAPI Core", "React 18", "PostgreSQL"].map((tech, i) => (
                 <motion.span
                   key={i}
                   whileHover={{ y: -5, color: "#fff", borderColor: "#5B7AB5", scale: 1.05 }}
@@ -603,246 +673,41 @@ export default function Home() {
             </motion.div>
           </motion.div>
         </div>
-      </section>
+      </motion.section>
 
-      {/* Trust Section with auto-rotating testimonials */}
-      <section className="py-24 px-6 sm:px-8 lg:px-10 bg-[#0F1F2F] relative overflow-hidden">
-        <div className="relative max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-20"
-          >
-            <motion.div
-              animate={{ rotate: 360 }}
-              transition={{ duration: 30, repeat: Infinity, ease: "linear" }}
-              className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gradient-to-br from-[#2D3A5E] to-[#4A6FA5] mb-6"
-            >
-              <Users className="w-8 h-8 text-white" />
-            </motion.div>
-            <h2 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-6">
-              Trusted by Engineering Teams
-            </h2>
-            <p className="text-gray-500 text-xl max-w-2xl mx-auto">
-              CloudIntel is the preferred choice for modern enterprises optimizing their AWS infrastructure.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-3 gap-8 lg:gap-10">
-            {[
-              {
-                quote: "Cut our AWS costs by 32% in the first month. The optimization recommendations were spot-on and easy to implement.",
-                author: "Sarah Chen",
-                role: "CTO, TechFlow",
-                rating: 5,
-                initials: "SC"
-              },
-              {
-                quote: "The forecasting accuracy is incredible. We now plan our cloud budget with confidence instead of guessing.",
-                author: "Michael Rodriguez",
-                role: "Engineering Lead, CloudScale",
-                rating: 5,
-                initials: "MR"
-              },
-              {
-                quote: "Finally a tool that gives us complete visibility across all our AWS accounts. The interface is clean and intuitive.",
-                author: "Priya Patel",
-                role: "DevOps Manager, DataCore",
-                rating: 5,
-                initials: "PP"
-              }
-            ].map((testimonial, i) => (
-              <GlowingCard key={i} delay={i * 0.2}>
-                <div className="p-10">
-                  <div className="flex gap-1 mb-6">
-                    {[...Array(5)].map((_, j) => (
-                      <motion.div
-                        key={j}
-                        initial={{ scale: 0 }}
-                        animate={{ scale: 1 }}
-                        transition={{ delay: i * 0.1 + j * 0.1 }}
-                      >
-                        <Star className="w-4 h-4 text-[#5B7AB5] fill-[#5B7AB5]" />
-                      </motion.div>
-                    ))}
-                  </div>
-                  <p className="text-gray-400 text-lg leading-relaxed mb-8 italic">
-                    "{testimonial.quote}"
-                  </p>
-                  <div className="flex items-center gap-4">
-                    <motion.div
-                      whileHover={{ rotate: 6 }}
-                      className="w-12 h-12 rounded-2xl bg-gradient-to-br from-[#2D3A5E] to-[#4A6FA5] flex items-center justify-center text-sm font-bold text-white shadow-lg"
-                    >
-                      {testimonial.initials}
-                    </motion.div>
-                    <div>
-                      <p className="text-base font-bold text-white">{testimonial.author}</p>
-                      <p className="text-sm font-medium text-gray-500 uppercase tracking-wider">{testimonial.role}</p>
-                    </div>
-                  </div>
-                </div>
-              </GlowingCard>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section with enhanced cards */}
-      <section id="features" className="py-32 px-6 sm:px-8 lg:px-10 bg-[#0A1929] relative overflow-hidden">
+      {/* Real Capabilities Section */}
+      <section id="features" className="py-24 px-6 sm:px-8 lg:px-10 bg-[#0A1929] relative overflow-hidden">
         <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-24"
-          >
-            <span className="text-[#5B7AB5] font-black text-sm uppercase tracking-[0.4em] mb-4 block">Features</span>
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight mb-8">
-              Everything you need to <br /> <span className="text-[#5B7AB5]">optimize your cloud</span>
-            </h2>
-            <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed">
-              Comprehensive tools that give you absolute control over your infrastructure and spending.
-            </p>
-          </motion.div>
-
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Reduce Cloud Costs",
-                description: "Identify waste and optimize resources to cut your AWS bill by up to 35% with automated recommendations.",
-                icon: BarChart3,
-                benefit: "Save money automatically",
-                color: "from-emerald-500 to-teal-500",
-                stat: "35%",
-                statLabel: "average savings"
-              },
-              {
-                title: "Forecast with Confidence",
-                description: "Predict future costs with 98% accuracy using ML models trained on your usage patterns.",
-                icon: TrendingUp,
-                benefit: "Plan budgets accurately",
-                color: "from-blue-500 to-indigo-500",
-                stat: "98%",
-                statLabel: "accuracy rate"
-              },
-              {
-                title: "Real-time Visibility",
-                description: "Monitor every AWS resource with live metrics, instant alerts, and comprehensive dashboards.",
-                icon: LayoutDashboard,
-                benefit: "Never miss an anomaly",
-                color: "from-purple-500 to-pink-500",
-                stat: "24/7",
-                statLabel: "monitoring"
-              },
-              {
-                title: "AI-Powered Insights",
-                description: "Get smart recommendations to improve efficiency and eliminate waste across all services.",
-                icon: Sparkles,
-                benefit: "Optimize automatically",
-                color: "from-amber-500 to-orange-500",
-                stat: "10x",
-                statLabel: "faster insights"
-              },
-              {
-                title: "Multi-Account Support",
-                description: "Manage all your AWS accounts from a single dashboard with consolidated views.",
-                icon: Globe,
-                benefit: "Centralized control",
-                color: "from-cyan-500 to-blue-500",
-                stat: "Unlimited",
-                statLabel: "accounts"
-              },
-              {
-                title: "Security & Compliance",
-                description: "Ensure your infrastructure follows best practices with automated security audits.",
-                icon: ShieldCheck,
-                benefit: "Stay secure always",
-                color: "from-red-500 to-rose-500",
-                stat: "100%",
-                statLabel: "compliant"
-              }
-            ].map((feature, i) => (
-              <GlowingCard key={i} delay={i * 0.1}>
-                <div className="p-10">
-                  <motion.div
-                    className="relative mb-8"
-                    whileHover={{ scale: 1.05 }}
-                  >
-                    <div className={`w-16 h-16 rounded-[1.25rem] bg-gradient-to-br ${feature.color} flex items-center justify-center text-white shadow-xl`}>
-                      <feature.icon className="w-8 h-8" />
-                    </div>
-                    <motion.div
-                      className="absolute -inset-2 bg-[#5B7AB5]/20 blur-xl rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                      animate={{ scale: [1, 1.2, 1] }}
-                      transition={{ duration: 2, repeat: Infinity }}
-                    />
-                  </motion.div>
-
-                  <h3 className="text-2xl font-bold text-white mb-4 tracking-tight">{feature.title}</h3>
-                  <p className="text-gray-500 text-base leading-relaxed mb-6">{feature.description}</p>
-
-                  <div className="mb-6">
-                    <div className="text-3xl font-black bg-gradient-to-r ${feature.color} bg-clip-text text-transparent">
-                      {feature.stat}
-                    </div>
-                    <div className="text-xs font-bold text-gray-500 uppercase tracking-widest">{feature.statLabel}</div>
-                  </div>
-
-                  <div className="inline-flex items-center gap-2 text-xs font-bold text-[#5B7AB5] bg-[#5B7AB5]/10 px-4 py-2 rounded-full uppercase tracking-widest">
-                    <CheckCircle2 className="w-3 h-3" />
-                    <span>{feature.benefit}</span>
-                  </div>
-                </div>
-              </GlowingCard>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Benefits Section with animated counters */}
-      <section id="benefits" className="py-32 px-6 sm:px-8 lg:px-10 bg-[#0F1F2F] relative overflow-hidden">
-        <div className="max-w-7xl mx-auto">
-          <div className="grid lg:grid-cols-2 gap-20 items-center">
+          <div className="grid lg:grid-cols-2 gap-16 items-center">
             <motion.div
-              initial={{ opacity: 0, x: -30 }}
+              initial={{ opacity: 0, x: -50 }}
               whileInView={{ opacity: 1, x: 0 }}
-              viewport={{ once: true }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 0.7 }}
             >
-              <span className="text-[#5B7AB5] font-black text-sm uppercase tracking-[0.4em] mb-4 block">Benefits</span>
-              <h2 className="text-4xl sm:text-5xl font-bold text-white tracking-tight mb-8 leading-tight">
-                Transform your cloud <br /> <span className="text-[#5B7AB5]">into a strategic asset</span>
+              <h2 className="text-4xl md:text-5xl font-black text-white mb-8 tracking-tighter">
+                Real-time visibility into your <span className="text-[#5B7AB5]">entire AWS footprint.</span>
               </h2>
-              <p className="text-gray-500 text-xl mb-12 leading-relaxed">
-                CloudIntel goes beyond simple monitoring. We provide the intelligence you need to innovate faster and spend smarter.
+              <p className="text-lg text-gray-500 mb-10 leading-relaxed">
+                The Cloud Intelligence Platform currently supports the core pillars of AWS infrastructure. We sync your data directly from the AWS SDK to provide an unfiltered view of your resources.
               </p>
 
-              <div className="space-y-8">
+              <div className="grid sm:grid-cols-2 gap-6">
                 {[
-                  { title: "Reduce costs by 30% on average", description: "Identify underutilized resources and right-size instances automatically", icon: BarChart3, color: "text-emerald-400" },
-                  { title: "Improve infrastructure efficiency", description: "Get real-time visibility into resource utilization and performance", icon: Zap, color: "text-[#5B7AB5]" },
-                  { title: "Make data-driven decisions", description: "Accurate forecasts and insights to plan your cloud infrastructure better", icon: TrendingUp, color: "text-amber-400" },
-                  { title: "Enterprise-grade security", description: "Your data is encrypted and secure with industry-standard compliance", icon: ShieldCheck, color: "text-purple-400" }
-                ].map((benefit, i) => (
+                  { title: "EC2 Clusters", desc: "Monitor instance states, types, and utilization metrics.", icon: Cpu },
+                  { title: "S3 Storage", desc: "Track bucket sizes, object counts, and storage trends.", icon: Globe },
+                  { title: "RDS Databases", desc: "Review database health and provisioned capacity.", icon: Zap },
+                  { title: "Lambda Tasks", desc: "Analyze function performance and execution costs.", icon: Cloud }
+                ].map((item, i) => (
                   <motion.div
                     key={i}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: i * 0.1 }}
-                    whileHover={{ x: 10 }}
-                    className="flex gap-6 group"
+                    className="flex gap-4 p-4 rounded-2xl bg-white/5 border border-white/5 hover:border-[#5B7AB5]/20 transition-all cursor-pointer"
+                    whileHover={{ x: 5, backgroundColor: "rgba(255,255,255,0.08)" }}
                   >
-                    <motion.div
-                      whileHover={{ scale: 1.1, rotate: 5 }}
-                      className="w-14 h-14 rounded-2xl bg-white/5 border border-white/5 flex items-center justify-center flex-shrink-0 group-hover:border-[#5B7AB5]/40 transition-all duration-300"
-                    >
-                      <benefit.icon className={`w-7 h-7 ${benefit.color}`} />
-                    </motion.div>
+                    <item.icon className="w-6 h-6 text-[#5B7AB5] shrink-0" />
                     <div>
-                      <h3 className="text-xl font-bold text-white mb-2">{benefit.title}</h3>
-                      <p className="text-gray-500 text-base leading-relaxed">{benefit.description}</p>
+                      <h4 className="text-white font-bold text-sm mb-1">{item.title}</h4>
+                      <p className="text-xs text-gray-500">{item.desc}</p>
                     </div>
                   </motion.div>
                 ))}
@@ -850,57 +715,81 @@ export default function Home() {
             </motion.div>
 
             <motion.div
-              variants={staggerContainer}
-              initial="hidden"
-              whileInView="visible"
+              initial={{ opacity: 0, scale: 0.9, rotateY: 15 }}
+              whileInView={{ opacity: 1, scale: 1, rotateY: 0 }}
               viewport={{ once: true }}
-              className="grid grid-cols-2 gap-6"
+              transition={{ duration: 0.7, type: "spring" }}
+              className="relative aspect-square rounded-[3rem] bg-gradient-to-br from-[#1A2A4A] to-[#0A1929] border border-white/10 flex items-center justify-center overflow-hidden group"
             >
-              {[
-                { value: "30", label: "Average savings", suffix: "%", color: "from-emerald-500 to-teal-400", icon: BarChart3 },
-                { value: "98", label: "Forecast accuracy", suffix: "%", color: "from-[#5B7AB5] to-blue-400", icon: Target },
-                { value: "24", label: "Real-time monitoring", suffix: "/7", color: "from-purple-500 to-pink-400", icon: LayoutDashboard },
-                { value: "10", label: "Faster insights", suffix: "x", color: "from-amber-500 to-orange-400", icon: Zap }
-              ].map((stat, i) => (
-                <motion.div
-                  key={i}
-                  variants={fadeIn}
-                  whileHover={{ y: -5, scale: 1.02 }}
-                  className="bg-white/5 backdrop-blur-xl p-8 rounded-[2.5rem] border border-white/5 hover:border-[#5B7AB5]/40 transition-all duration-500 shadow-2xl"
-                >
-                  <div className={`w-12 h-12 bg-gradient-to-br ${stat.color} rounded-xl flex items-center justify-center text-white mb-6 shadow-lg`}>
-                    <stat.icon className="w-6 h-6" />
-                  </div>
-                  <div className={`text-4xl font-black bg-gradient-to-r ${stat.color} bg-clip-text text-transparent mb-2 tracking-tighter`}>
-                    <AnimatedCounter value={stat.value} suffix={stat.suffix} />
-                  </div>
-                  <p className="text-sm font-bold text-gray-500 uppercase tracking-widest leading-tight">{stat.label}</p>
-                </motion.div>
-              ))}
+              <div className="absolute inset-0 bg-[#5B7AB5]/5 animate-pulse" />
+              <motion.div
+                className="relative z-10 text-center p-12"
+                animate={{ y: [0, -10, 0] }}
+                transition={{ duration: 4, repeat: Infinity }}
+              >
+                <BarChart3 className="w-20 h-20 text-[#5B7AB5] mx-auto mb-6 opacity-50 group-hover:opacity-100 transition-opacity" />
+                <h3 className="text-2xl font-bold text-white mb-4">Live Sync Active</h3>
+                <p className="text-gray-500 text-sm max-w-xs mx-auto">
+                  Our synchronization engine uses Boto3 to reconcile your local dashboard with live AWS metadata every 10 minutes.
+                </p>
+              </motion.div>
             </motion.div>
           </div>
         </div>
       </section>
 
-      {/* How it Works with progress tracker */}
+      {/* Benefits Section */}
+      <section id="benefits" className="py-32 px-6 sm:px-8 lg:px-10 bg-[#0F1F2F] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto">
+          <SectionHeader
+            badge="Benefits"
+            title="Transform your cloud into a strategic asset"
+            subtitle="CloudIntel goes beyond simple monitoring. We provide the intelligence you need to innovate faster and spend smarter."
+          />
+
+          <div className="grid md:grid-cols-2 gap-8">
+            {[
+              { title: "Reduce costs by 30% on average", description: "Identify underutilized resources and right-size instances automatically", icon: BarChart3, color: "from-emerald-500 to-teal-500" },
+              { title: "Improve infrastructure efficiency", description: "Get real-time visibility into resource utilization and performance", icon: Zap, color: "from-[#5B7AB5] to-blue-500" },
+              { title: "Make data-driven decisions", description: "Accurate forecasts and insights to plan your cloud infrastructure better", icon: TrendingUp, color: "from-amber-500 to-orange-500" },
+              { title: "Enterprise-grade security", description: "Your data is encrypted and secure with industry-standard compliance", icon: ShieldCheck, color: "from-purple-500 to-pink-500" }
+            ].map((benefit, i) => (
+              <motion.div
+                key={i}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: i * 0.15 }}
+                whileHover={{ x: 10 }}
+                className="flex gap-6 p-6 rounded-2xl bg-white/5 border border-white/5 hover:border-[#5B7AB5]/30 transition-all duration-300"
+              >
+                <motion.div
+                  whileHover={{ scale: 1.1, rotate: 5 }}
+                  className={`w-14 h-14 rounded-2xl bg-gradient-to-br ${benefit.color} flex items-center justify-center flex-shrink-0 shadow-lg`}
+                >
+                  <benefit.icon className="w-7 h-7 text-white" />
+                </motion.div>
+                <div>
+                  <h3 className="text-xl font-bold text-white mb-2">{benefit.title}</h3>
+                  <p className="text-gray-500 text-base leading-relaxed">{benefit.description}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
       <section id="how-it-works" className="py-32 px-6 sm:px-8 lg:px-10 bg-[#0A1929] relative">
         <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-24"
-          >
-            <span className="text-[#5B7AB5] font-black text-sm uppercase tracking-[0.4em] mb-4 block">Process</span>
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight mb-8">
-              Get started in <span className="text-[#5B7AB5]">minutes</span>
-            </h2>
-            <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed">
-              Simple three-step process to start optimizing your cloud infrastructure with zero friction.
-            </p>
-          </motion.div>
+          <SectionHeader
+            badge="Process"
+            title="Get started in minutes"
+            subtitle="Simple three-step process to start optimizing your cloud infrastructure with zero friction."
+          />
 
           <div className="grid md:grid-cols-3 gap-12 relative">
+            {/* Animated connector line */}
             <div className="hidden md:block absolute top-[4.5rem] left-[15%] right-[15%] h-0.5 bg-white/5 overflow-hidden">
               <motion.div
                 initial={{ left: "-100%" }}
@@ -946,23 +835,14 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Pricing Section with enhanced cards */}
+      {/* Pricing Section */}
       <section id="pricing" className="py-32 px-6 sm:px-8 lg:px-10 bg-[#0F1F2F]">
         <div className="max-w-7xl mx-auto">
-          <motion.div
-            initial={{ opacity: 0, y: 30 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="text-center mb-24"
-          >
-            <span className="text-[#5B7AB5] font-black text-sm uppercase tracking-[0.4em] mb-4 block">Pricing</span>
-            <h2 className="text-4xl sm:text-5xl md:text-6xl font-bold text-white tracking-tight mb-8">
-              Simple, <span className="text-[#5B7AB5]">transparent</span> pricing
-            </h2>
-            <p className="text-gray-500 text-xl max-w-2xl mx-auto leading-relaxed">
-              Start for free and scale as you grow. No hidden fees or complex contracts.
-            </p>
-          </motion.div>
+          <SectionHeader
+            badge="Pricing"
+            title="Simple, transparent pricing"
+            subtitle="Start for free and scale as you grow. No hidden fees or complex contracts."
+          />
 
           <div className="grid md:grid-cols-3 gap-8 max-w-6xl mx-auto">
             {[
@@ -1036,7 +916,74 @@ export default function Home() {
         </div>
       </section>
 
-      {/* Enhanced CTA Section with parallax */}
+      {/* Vision & Open Source Section */}
+      <section id="vision" className="py-32 px-6 sm:px-8 lg:px-10 bg-[#0A1929] relative overflow-hidden">
+        <div className="max-w-7xl mx-auto text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            whileInView={{ opacity: 1, scale: 1 }}
+            viewport={{ once: true }}
+            className="inline-flex items-center gap-2 bg-[#5B7AB5]/10 px-4 py-2 rounded-full border border-[#5B7AB5]/20 mb-8"
+          >
+            <Award className="w-4 h-4 text-[#5B7AB5]" />
+            <span className="text-xs font-black uppercase tracking-widest text-[#5B7AB5]">Project Vision</span>
+          </motion.div>
+
+          <motion.h2
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            className="text-4xl sm:text-5xl md:text-7xl font-black text-white tracking-tighter mb-10 leading-tight"
+          >
+            Built for developers, <br /> <span className="text-[#5B7AB5]">optimized for reality.</span>
+          </motion.h2>
+
+          <motion.p
+            initial={{ opacity: 0, y: 30 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.1 }}
+            className="text-xl text-gray-400 max-w-3xl mx-auto mb-16 leading-relaxed"
+          >
+            CloudIntel started as a mission to bring clarity to cloud infrastructure. Instead of complex pricing tiers, we provide a unified platform that focuses on what matters: **visibility, cost, and risk.**
+          </motion.p>
+
+          <div className="grid md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, x: -30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -5 }}
+              className="p-10 rounded-3xl bg-white/5 border border-white/5 hover:border-[#5B7AB5]/30 transition-all duration-300 text-left"
+            >
+              <div className="w-12 h-12 rounded-xl bg-[#5B7AB5]/20 flex items-center justify-center mb-6">
+                <Code2 className="w-6 h-6 text-[#5B7AB5]" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4">Open Infrastructure</h3>
+              <p className="text-gray-500 leading-relaxed">
+                Transparency is at our core. Our synchronization engine is open for inspection, ensuring you know exactly how your data is being handled.
+              </p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: 30 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              viewport={{ once: true }}
+              whileHover={{ y: -5 }}
+              className="p-10 rounded-3xl bg-white/5 border border-white/5 hover:border-[#5B7AB5]/30 transition-all duration-300 text-left"
+            >
+              <div className="w-12 h-12 rounded-xl bg-emerald-500/20 flex items-center justify-center mb-6">
+                <ShieldCheck className="w-6 h-6 text-emerald-500" />
+              </div>
+              <h3 className="text-2xl font-bold text-white mb-4">Privacy by Design</h3>
+              <p className="text-gray-500 leading-relaxed">
+                We use minimal ReadOnly permissions to ensure your live infrastructure remains untouched and secure at all times.
+              </p>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Enhanced CTA Section */}
       <section className="py-32 px-6 sm:px-8 lg:px-10 bg-gradient-to-br from-[#0A1929] to-[#1A2A4A] text-white text-center relative overflow-hidden">
         <motion.div
           style={{ x: mousePosition.x * 0.5, y: mousePosition.y * 0.5 }}
@@ -1132,7 +1079,12 @@ export default function Home() {
         <div className="max-w-7xl mx-auto">
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-12 lg:gap-16 mb-20">
             <div className="col-span-1 sm:col-span-2 lg:col-span-1">
-              <div className="flex items-center gap-3 mb-8">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                className="flex items-center gap-3 mb-8"
+              >
                 <motion.div
                   whileHover={{ scale: 1.1, rotate: 5 }}
                   className="w-10 h-10 bg-gradient-to-br from-[#2D3A5E] to-[#4A6FA5] rounded-xl flex items-center justify-center shadow-lg"
@@ -1140,7 +1092,7 @@ export default function Home() {
                   <Cloud className="w-6 h-6 text-white" />
                 </motion.div>
                 <span className="text-2xl font-black text-white tracking-tighter">cloudintel<span className="text-[#5B7AB5]">.</span></span>
-              </div>
+              </motion.div>
               <p className="text-sm leading-relaxed mb-8 max-w-xs font-medium">
                 AI-powered Cloud Financial Operations (FinOps) platform. We help engineering teams build sustainable and cost-efficient cloud architectures.
               </p>
@@ -1163,31 +1115,40 @@ export default function Home() {
             </div>
 
             {[
-              { title: "Product", links: ["Features", "Pricing", "Process", "Integrations", "Changelog"] },
-              { title: "Company", links: ["About Us", "Our Blog", "Careers", "Contact", "Press Kit"] },
-              { title: "Resources", links: ["Documentation", "API Reference", "Help Center", "Status", "Tutorials"] },
-              { title: "Legal", links: ["Privacy Policy", "Terms of Service", "Security", "Cookie Settings", "Compliance"] }
+              { title: "Platform", links: ["Infrastructure", "Cost Analytics", "Risk Intelligence", "Optimization"] },
+              { title: "Resources", links: ["Documentation", "API Reference", "Security", "About Us"] },
+              { title: "Support", links: ["Contact Support", "Help Center", "Privacy Policy", "Terms"] }
             ].map((column, idx) => (
-              <div key={idx}>
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 }}
+              >
                 <h3 className="text-white font-bold mb-6 text-sm uppercase tracking-widest">{column.title}</h3>
                 <ul className="space-y-4">
                   {column.links.map((link, i) => (
                     <li key={i}>
-                      <motion.a
+                      <Link
                         href={`/${link.toLowerCase().replace(/ /g, '-')}`}
-                        whileHover={{ x: 5, color: "#fff" }}
-                        className="hover:text-white transition-colors text-sm font-medium cursor-pointer inline-block"
+                        className="text-gray-500 hover:text-[#5B7AB5] transition-colors text-sm font-medium cursor-pointer inline-block group"
                       >
-                        {link}
-                      </motion.a>
+                        <span className="group-hover:translate-x-1 transition-transform inline-block">{link}</span>
+                      </Link>
                     </li>
                   ))}
                 </ul>
-              </div>
+              </motion.div>
             ))}
           </div>
 
-          <div className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8">
+          <motion.div
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            viewport={{ once: true }}
+            className="pt-10 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-8"
+          >
             <p className="text-xs font-semibold uppercase tracking-widest order-2 md:order-1">
               © {new Date().getFullYear()} Cloud Intelligence Platform. Designed for performance.
             </p>
@@ -1195,14 +1156,14 @@ export default function Home() {
             <div className="flex flex-wrap items-center justify-center gap-8 order-1 md:order-2">
               <motion.a
                 href="/trust"
-                whileHover={{ color: "#5B7AB5" }}
+                whileHover={{ color: "#5B7AB5", y: -2 }}
                 className="text-xs font-bold uppercase tracking-[0.2em] hover:text-[#5B7AB5] transition-colors"
               >
                 Trust Center
               </motion.a>
               <motion.a
                 href="/sitemap"
-                whileHover={{ color: "#5B7AB5" }}
+                whileHover={{ color: "#5B7AB5", y: -2 }}
                 className="text-xs font-bold uppercase tracking-[0.2em] hover:text-[#5B7AB5] transition-colors"
               >
                 Sitemap
@@ -1219,7 +1180,7 @@ export default function Home() {
                 <span className="text-[10px] font-black uppercase tracking-tighter">Status: Protected</span>
               </motion.div>
             </div>
-          </div>
+          </motion.div>
         </div>
       </footer>
     </div>
