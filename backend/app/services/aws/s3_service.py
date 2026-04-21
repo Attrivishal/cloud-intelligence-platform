@@ -93,6 +93,12 @@ def save_s3_buckets(db: Session, buckets_data):
         for b in db.query(S3Bucket).all()
     }
 
+    # Delete buckets from DB that are no longer in AWS
+    new_names = {bucket["name"] for bucket in buckets_data}
+    for name, bucket_obj in existing.items():
+        if name not in new_names:
+            db.delete(bucket_obj)
+
     for bucket in buckets_data:
         if bucket["name"] in existing:
             existing[bucket["name"]].size_bytes = bucket["size_bytes"]
