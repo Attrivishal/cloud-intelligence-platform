@@ -40,41 +40,59 @@ export const fetchOverview = () =>
    🔥 EC2
 ===================================================== */
 
-export const fetchEC2 = () =>
-  request("/test-ec2");
+export const fetchEC2 = async () => {
+  const data = await request("/aws/ec2/");
+  return data.instances || [];
+};
 
 export const syncEC2 = () =>
-  request("/sync-ec2", "POST");
+  request("/aws/ec2/sync", "POST");
 
 /* =====================================================
    🔥 S3
 ===================================================== */
 
-export const fetchS3 = () =>
-  request("/test-s3");
+export const fetchS3 = async () => {
+  const data = await request("/aws/s3/");
+  return data.buckets || [];
+};
 
 export const syncS3 = () =>
-  request("/sync-s3", "POST");
+  request("/aws/s3/sync", "POST");
 
 /* =====================================================
    🔥 RDS
 ===================================================== */
 
-export const fetchRDS = () =>
-  request("/test-rds");
+export const fetchRDS = async () => {
+  const data = await request("/aws/rds/");
+  return data.instances || [];
+};
 
 export const syncRDS = () =>
-  request("/sync-rds", "POST");
+  request("/aws/rds/sync", "POST");
 
 /* =====================================================
    🔥 LAMBDA
 ===================================================== */
 
-export const fetchLambda = () =>
-  request("/test-lambda");
+export const fetchLambda = async () => {
+  const data = await request("/aws/lambda/");
+  return data.functions || [];
+};
 
 export const syncLambda = () =>
-  request("/sync-lambda", "POST");
+  request("/aws/lambda/sync", "POST");
+
+/* =====================================================
+   🔥 RISK
+===================================================== */
+
+export const fetchRiskScore = () =>
+  request("/aws/risk/");
+
+export const fetchRiskTrend = () =>
+  request("/aws/risk/trend");
 
 
 
@@ -96,12 +114,12 @@ export const fetchInfrastructure = async () => {
   /* ================= EC2 ================= */
 
   const instances = ec2.map((i: any) => ({
-    id: i.instance_id,
-    type: i.instance_type,
+    id: i.id,
+    type: i.type,
     state: i.state,
-    cpu: 0,
-    cost: 0.25,
-    risk: i.state === "stopped" ? "IDLE ⚠️" : "ACTIVE",
+    cpu: i.cpu || 0,
+    cost: i.cost || 0,
+    risk: i.risk || "OPTIMAL",
   }));
 
   const running = instances.filter((i: any) => i.state === "running").length;
@@ -119,9 +137,9 @@ export const fetchInfrastructure = async () => {
   /* ================= RDS ================= */
 
   const databases = rds.map((db: any) => ({
-    id: db.db_identifier,
+    id: db.id,
     engine: db.engine,
-    storage: db.allocated_storage,
+    storage: db.storage,
     cost: db.cost,
     risk: db.risk,
   }));
@@ -153,14 +171,14 @@ export const fetchInfrastructure = async () => {
   }
 
   const unusedLambda = functions.filter((f: any) =>
-    f.risk.includes("UNUSED")
+    (f.risk || "").includes("UNUSED")
   ).length;
 
   if (unusedLambda > 0) {
     insights.push(`⚠ ${unusedLambda} unused Lambda functions`);
   }
 
-  if (databases.some((d: any) => d.risk !== "HEALTHY")) {
+  if (databases.some((d: any) => (d.risk || "") !== "HEALTHY")) {
     insights.push(`⚠ Some RDS instances need attention`);
   }
 
