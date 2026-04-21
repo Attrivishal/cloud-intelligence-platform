@@ -88,6 +88,12 @@ def save_rds_instances(db: Session, data):
         for r in db.query(RDSInstance).all()
     }
 
+    # Delete RDS instances from DB that are no longer in AWS
+    new_ids = {r["db_identifier"] for r in data}
+    for db_id, db_obj in existing.items():
+        if db_id not in new_ids:
+            db.delete(db_obj)
+
     for r in data:
         if r["db_identifier"] in existing:
             obj = existing[r["db_identifier"]]
