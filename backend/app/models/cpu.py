@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date
 from datetime import datetime
 from app.db.database import Base
 
@@ -8,5 +8,6 @@ class CPUMetric(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     instance_id = Column(String, index=True)
-    cpu_utilization = Column(Float)
+    average_cpu = Column(Float)
+    date = Column(Date, index=True)
     timestamp = Column(DateTime, default=datetime.utcnow)
