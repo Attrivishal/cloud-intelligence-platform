@@ -758,11 +758,10 @@ function ResourceRow({ name, type, state, extra, index }: any) {
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <span className={`text-xs px-2 py-1 rounded-full ${
-          state === "running"
+        <span className={`text-xs px-2 py-1 rounded-full ${state === "running"
             ? "bg-green-500/20 text-green-400"
             : "bg-red-500/20 text-red-400"
-        }`}>
+          }`}>
           {state}
         </span>
         {extra && (
@@ -838,11 +837,10 @@ function LambdaRow({ name, runtime, memory, invocations, index }: any) {
       </div>
       <div className="flex items-center gap-4">
         <span className="text-sm text-gray-300">{memory} MB</span>
-        <span className={`text-xs px-2 py-1 rounded-full ${
-          isUnused
+        <span className={`text-xs px-2 py-1 rounded-full ${isUnused
             ? "bg-red-500/20 text-red-400 animate-pulse"
             : "bg-green-500/20 text-green-400"
-        }`}>
+          }`}>
           {isUnused ? "UNUSED ⚠️" : "ACTIVE"}
         </span>
       </div>
