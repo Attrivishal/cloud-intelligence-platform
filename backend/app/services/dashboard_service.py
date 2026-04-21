@@ -2,6 +2,9 @@ from sqlalchemy.orm import Session
 from app.models.instance import EC2Instance
 from app.models.cpu import CPUMetric
 from app.models.cost import DailyCost
+from app.models.s3_bucket import S3Bucket
+from app.models.rds_instance import RDSInstance
+from app.models.lambda_model import LambdaFunction
 
 from app.services.analytics.forecast_service import get_cost_forecast
 from app.services.analytics.optimization_service import get_optimization_summary
@@ -194,6 +197,85 @@ def get_dashboard_overview(db: Session):
         sustainability_score=sustainability_score
     )
 
+    # ================= SERVICE SPECIFIC DETAILS (NEW) =================
+
+    # 1. EC2
+    ec2_data = {
+        "total_cost": safe_round(sum(i.cost or 0 for i in instances)),
+        "running": running_instances,
+        "total_instances": total_instances,
+        "underutilized": len([i for i in instances if i.risk == "UNDERUTILIZED ⚠️"]),
+        "overloaded": len([i for i in instances if i.risk == "OVERLOADED 🔥"]),
+        "instances": [
+            {
+                "id": i.instance_id,
+                "type": i.instance_type,
+                "state": i.state,
+                "cpu": i.average_cpu or 0,
+                "cost": safe_round(i.cost or 0),
+                "risk": i.risk or "OPTIMAL"
+            }
+            for i in instances
+        ]
+    }
+
+    # 2. S3
+    buckets = db.query(S3Bucket).all()
+    s3_data = {
+        "total_cost": safe_round(sum(b.cost or 0 for b in buckets)),
+        "total_buckets": len(buckets),
+        "buckets": [
+            {
+                "name": b.name,
+                "size": b.size_bytes or 0,
+                "objects": b.object_count or 0,
+                "cost": safe_round(b.cost or 0),
+                "status": b.status or "ACTIVE"
+            }
+            for b in buckets
+        ]
+    }
+
+    # 3. RDS
+    rds_insts = db.query(RDSInstance).all()
+    rds_data = {
+        "total_cost": safe_round(sum(r.cost or 0 for r in rds_insts)),
+        "total_databases": len(rds_insts),
+        "low_storage": len([r for r in rds_insts if r.risk == "LOW STORAGE ⚠️"]),
+        "instances": [
+            {
+                "id": r.db_identifier,
+                "engine": r.engine or "postgres",
+                "type": r.instance_class,
+                "state": r.status,
+                "storage": r.allocated_storage or 0,
+                "cost": safe_round(r.cost or 0),
+                "risk": r.risk or "OPTIMAL"
+            }
+            for r in rds_insts
+        ]
+    }
+
+    # 4. LAMBDA
+    functions = db.query(LambdaFunction).all()
+    lambda_data = {
+        "total_cost": safe_round(sum(f.cost or 0 for f in functions)),
+        "total_functions": len(functions),
+        "unused_functions": len([f for f in functions if f.risk == "UNUSED ⚠️"]),
+        "functions": [
+            {
+                "name": f.name,
+                "runtime": f.runtime or "",
+                "memory": f.memory or 128,
+                "timeout": f.timeout or 3,
+                "invocations": f.invocations or 0,
+                "cost": safe_round(f.cost or 0),
+                "risk": f.risk or "OPTIMAL"
+            }
+            for f in functions
+        ]
+    }
+
     # ================= FINAL RESPONSE =================
     return {
         "cost": cost_summary,
@@ -202,5 +284,11 @@ def get_dashboard_overview(db: Session):
         "forecast": forecast_data,
         "optimization": optimization_summary,
         "sustainability": sustainability_report,
-        "cloud_health": cloud_health
+        "cloud_health": cloud_health,
+
+        # 🔥 NEW SERVICE SPECIFIC DETAILS
+        "ec2": ec2_data,
+        "s3": s3_data,
+        "rds": rds_data,
+        "lambda": lambda_data
     }
