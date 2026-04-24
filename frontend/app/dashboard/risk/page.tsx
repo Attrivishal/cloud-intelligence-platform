@@ -247,8 +247,8 @@ export default function RiskPage() {
   const sortedRisks = [...filteredRisks].sort((a, b) => {
     let comparison = 0;
     if (sortBy === "severity") {
-      const severityOrder = { high: 3, medium: 2, low: 1 };
-      comparison = (severityOrder[b.severity] || 0) - (severityOrder[a.severity] || 0);
+      const severityOrder = { high: 3, medium: 2, low: 1 } as const;
+      comparison = (severityOrder[b.severity as keyof typeof severityOrder] || 0) - (severityOrder[a.severity as keyof typeof severityOrder] || 0);
     } else if (sortBy === "cost") {
       comparison = b.cost - a.cost;
     } else if (sortBy === "service") {
@@ -339,7 +339,7 @@ export default function RiskPage() {
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
-    animation: { duration: 1000, easing: 'easeInOutQuart' as const },
+    animation: { duration: 1000 },
     plugins: {
       legend: { display: false },
       tooltip: {
@@ -648,16 +648,19 @@ export default function RiskPage() {
 }
 
 function KPICard({ title, value, icon: Icon, color, badge }: any) {
-  const colors = { red: 'from-red-500 to-orange-600', yellow: 'from-yellow-500 to-orange-500', blue: 'from-blue-500 to-purple-600', green: 'from-green-500 to-emerald-600', purple: 'from-purple-500 to-pink-600' };
-  const iconColors = { red: 'text-red-400', yellow: 'text-yellow-400', blue: 'text-blue-400', green: 'text-green-400', purple: 'text-purple-400' };
-  const badgeColors = { red: 'bg-red-500/20 text-red-400', yellow: 'bg-yellow-500/20 text-yellow-400', blue: 'bg-blue-500/20 text-blue-400', green: 'bg-green-500/20 text-green-400', purple: 'bg-purple-500/20 text-purple-400' };
+  const colors = { red: 'from-red-500 to-orange-600', yellow: 'from-yellow-500 to-orange-500', blue: 'from-blue-500 to-purple-600', green: 'from-green-500 to-emerald-600', purple: 'from-purple-500 to-pink-600' } as const;
+  const iconColors = { red: 'text-red-400', yellow: 'text-yellow-400', blue: 'text-blue-400', green: 'text-green-400', purple: 'text-purple-400' } as const;
+  const badgeColors = { red: 'bg-red-500/20 text-red-400', yellow: 'bg-yellow-500/20 text-yellow-400', blue: 'bg-blue-500/20 text-blue-400', green: 'bg-green-500/20 text-green-400', purple: 'bg-purple-500/20 text-purple-400' } as const;
+  const colorClass = colors[color as keyof typeof colors];
+  const iconClass = iconColors[color as keyof typeof iconColors];
+  const badgeClass = badgeColors[color as keyof typeof badgeColors];
   return (
     <div className="group relative">
-      <div className={`absolute -inset-0.5 bg-gradient-to-r ${colors[color]} rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500`}></div>
+      <div className={`absolute -inset-0.5 bg-gradient-to-r ${colorClass} rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500`}></div>
       <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl p-5 border border-slate-800 hover:border-red-500/40 hover:shadow-[0_0_30px_rgba(239,68,68,0.2)] transition-all duration-300">
         <div className="flex items-start justify-between">
-          <div><p className="text-gray-500 text-sm mb-2">{title}</p><div className="flex items-baseline gap-2"><p className="text-3xl font-bold text-white group-hover:scale-105 transition-transform duration-300">{value}</p>{badge && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeColors[color]} animate-pulse`}>{badge}</span>}</div></div>
-          <div className={`p-3 rounded-xl bg-${color}-500/10 group-hover:scale-110 transition-transform duration-300`}><Icon className={`w-5 h-5 ${iconColors[color]}`} /></div>
+          <div><p className="text-gray-500 text-sm mb-2">{title}</p><div className="flex items-baseline gap-2"><p className="text-3xl font-bold text-white group-hover:scale-105 transition-transform duration-300">{value}</p>{badge && <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeClass} animate-pulse`}>{badge}</span>}</div></div>
+          <div className={`p-3 rounded-xl bg-${color}-500/10 group-hover:scale-110 transition-transform duration-300`}><Icon className={`w-5 h-5 ${iconClass}`} /></div>
         </div>
       </div>
     </div>
@@ -665,13 +668,15 @@ function KPICard({ title, value, icon: Icon, color, badge }: any) {
 }
 
 function ServiceCard({ title, value, icon: Icon, color }: any) {
-  const iconColors = { blue: 'text-blue-400', green: 'text-green-400', yellow: 'text-yellow-400', purple: 'text-purple-400' };
-  const bgColors = { blue: 'bg-blue-500/10', green: 'bg-green-500/10', yellow: 'bg-yellow-500/10', purple: 'bg-purple-500/10' };
+  const iconColors = { blue: 'text-blue-400', green: 'text-green-400', yellow: 'text-yellow-400', purple: 'text-purple-400' } as const;
+  const bgColors = { blue: 'bg-blue-500/10', green: 'bg-green-500/10', yellow: 'bg-yellow-500/10', purple: 'bg-purple-500/10' } as const;
+  const iconClass = iconColors[color as keyof typeof iconColors];
+  const bgClass = bgColors[color as keyof typeof bgColors];
   return (
     <div className="group relative">
       <div className="absolute -inset-0.5 bg-gradient-to-r from-red-500 to-orange-600 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
       <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl p-5 border border-slate-800 hover:border-red-500/40 hover:shadow-[0_0_30px_rgba(239,68,68,0.2)] transition-all duration-300">
-        <div className="flex items-center gap-3"><div className={`p-2 ${bgColors[color]} rounded-lg group-hover:scale-110 transition-transform duration-300`}><Icon className={`w-4 h-4 ${iconColors[color]}`} /></div><div><p className="text-gray-400 text-sm">{title}</p><p className="text-xl font-bold text-white">{value}</p></div></div>
+        <div className="flex items-center gap-3"><div className={`p-2 ${bgClass} rounded-lg group-hover:scale-110 transition-transform duration-300`}><Icon className={`w-4 h-4 ${iconClass}`} /></div><div><p className="text-gray-400 text-sm">{title}</p><p className="text-xl font-bold text-white">{value}</p></div></div>
       </div>
     </div>
   );
@@ -683,8 +688,8 @@ function InsightCard({ type, title, message }: any) {
     warning: { bg: 'bg-yellow-500/10', border: 'border-yellow-500/20', icon: '⚠️', text: 'text-yellow-400' },
     danger: { bg: 'bg-red-500/10', border: 'border-red-500/20', icon: '🚨', text: 'text-red-400' },
     info: { bg: 'bg-blue-500/10', border: 'border-blue-500/20', icon: '💡', text: 'text-blue-400' },
-  };
-  const config = types[type] || types.info;
+  } as const;
+  const config = types[type as keyof typeof types] || types.info;
   return (
     <div className={`${config.bg} border ${config.border} rounded-xl p-4 hover:scale-[1.02] transition-all duration-300 hover:shadow-lg group`}>
       <div className="flex items-start gap-3"><span className={`${config.text} text-xl group-hover:scale-110 transition-transform duration-300`}>{config.icon}</span><div><p className={`${config.text} text-sm font-medium mb-1`}>{title}</p><p className="text-gray-300 text-sm">{message}</p></div></div>
