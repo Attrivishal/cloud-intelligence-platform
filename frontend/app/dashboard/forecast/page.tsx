@@ -557,7 +557,7 @@ export default function ForecastPage() {
                     radius={[4, 4, 0, 0]}
                     name="Predicted Cost"
                   >
-                    {chartData.map((entry, index) => (
+                    {chartData.map((entry: any, index: number) => (
                       <rect
                         key={`bar-${index}`}
                         fill="url(#barGradient)"
