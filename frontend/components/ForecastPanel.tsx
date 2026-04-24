@@ -59,7 +59,7 @@ export default function ForecastPanel({ data }: { data: any }) {
                 border: "1px solid #1e293b",
                 borderRadius: "8px"
               }}
-              formatter={(value: number) => `$${value}`}
+              formatter={(value: number | undefined) => `$${value ?? 0}`}
             />
 
             <Line
