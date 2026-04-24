@@ -626,7 +626,7 @@ function KPICard({ title, value, icon: Icon, color, badge, subtitle }: any) {
     yellow: 'from-yellow-500 to-orange-500',
     red: 'from-red-500 to-pink-500',
     purple: 'from-purple-500 to-pink-500',
-  };
+  } as const;
 
   const iconColors = {
     blue: 'text-blue-400',
@@ -635,7 +635,7 @@ function KPICard({ title, value, icon: Icon, color, badge, subtitle }: any) {
     yellow: 'text-yellow-400',
     red: 'text-red-400',
     purple: 'text-purple-400',
-  };
+  } as const;
 
   const badgeColors = {
     blue: 'bg-blue-500/20 text-blue-400',
@@ -644,11 +644,15 @@ function KPICard({ title, value, icon: Icon, color, badge, subtitle }: any) {
     yellow: 'bg-yellow-500/20 text-yellow-400',
     red: 'bg-red-500/20 text-red-400',
     purple: 'bg-purple-500/20 text-purple-400',
-  };
+  } as const;
+
+  const colorClass = colors[color as keyof typeof colors];
+  const iconClass = iconColors[color as keyof typeof iconColors];
+  const badgeClass = badgeColors[color as keyof typeof badgeColors];
 
   return (
     <div className="group relative">
-      <div className={`absolute -inset-0.5 bg-gradient-to-r ${colors[color]} rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500`}></div>
+      <div className={`absolute -inset-0.5 bg-gradient-to-r ${colorClass} rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500`}></div>
       <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl p-5 border border-slate-800 hover:border-blue-500/40 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all duration-300">
         <div className="flex items-start justify-between">
           <div>
@@ -656,7 +660,7 @@ function KPICard({ title, value, icon: Icon, color, badge, subtitle }: any) {
             <div className="flex items-baseline gap-2">
               <p className="text-3xl font-bold text-white group-hover:scale-105 transition-transform duration-300">{value}</p>
               {badge && (
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeColors[color]} animate-pulse`}>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeClass} animate-pulse`}>
                   {badge}
                 </span>
               )}
@@ -664,7 +668,7 @@ function KPICard({ title, value, icon: Icon, color, badge, subtitle }: any) {
             {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
           </div>
           <div className={`p-3 rounded-xl bg-${color}-500/10 group-hover:scale-110 transition-transform duration-300`}>
-            <Icon className={`w-5 h-5 ${iconColors[color]}`} />
+            <Icon className={`w-5 h-5 ${iconClass}`} />
           </div>
         </div>
       </div>
@@ -679,7 +683,9 @@ function Section({ title, icon: Icon, color, count, children, animate, delay }: 
     yellow: 'text-yellow-400',
     purple: 'text-purple-400',
     red: 'text-red-400',
-  };
+  } as const;
+
+  const iconClass = iconColors[color as keyof typeof iconColors];
 
   return (
     <div className={`group relative animate-${animate}`} style={{ animationDelay: delay ? `${delay}ms` : '0ms' }}>
@@ -688,7 +694,7 @@ function Section({ title, icon: Icon, color, count, children, animate, delay }: 
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-3">
             <div className="p-2 bg-slate-800 rounded-xl group-hover:scale-110 transition-transform duration-300">
-              <Icon className={`w-5 h-5 ${iconColors[color]}`} />
+              <Icon className={`w-5 h-5 ${iconClass}`} />
             </div>
             <h3 className="text-lg font-semibold text-white">{title}</h3>
           </div>
@@ -726,9 +732,9 @@ function InsightCard({ type, title, action, saving }: any) {
       icon: '✅',
       text: 'text-emerald-400',
     },
-  };
+  } as const;
 
-  const config = types[type] || types.info;
+  const config = types[type as keyof typeof types] || types.info;
 
   return (
     <div className={`${config.bg} border ${config.border} rounded-xl p-4 hover:scale-[1.02] transition-all duration-300 hover:shadow-lg group`}>
