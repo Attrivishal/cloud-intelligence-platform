@@ -121,8 +121,8 @@ export default function CostAnalytics() {
             type: "success",
             message: `Cost optimization opportunity`,
             detail: `You could save $${monthlySavings.toFixed(2)} per month`,
-            impact: totalCost > 0 
-              ? `${((monthlySavings / totalCost) * 100).toFixed(1)}% of current spend` 
+            impact: totalCost > 0
+              ? `${((monthlySavings / totalCost) * 100).toFixed(1)}% of current spend`
               : "No cost data",
             action: "View optimization report",
           });
@@ -134,9 +134,9 @@ export default function CostAnalytics() {
 
         const efficiencyScore = Math.max(
           100 -
-            (overview.ec2.underutilized * 8 +
-              (overview.lambda?.unused_functions || 0) * 4 +
-              overview.rds.low_storage * 5),
+          (overview.ec2.underutilized * 8 +
+            (overview.lambda?.unused_functions || 0) * 4 +
+            overview.rds.low_storage * 5),
           50
         );
 
@@ -178,13 +178,13 @@ export default function CostAnalytics() {
 
   const getTrend = () => {
     const trendData = data?.costTrend?.trend || [];
-    
+
     if (trendData.length < 2) return { value: 0, isUp: true };
-    
+
     const lastTwo = trendData.slice(-2);
-    
+
     const trend = ((lastTwo[1].amount - lastTwo[0].amount) / (lastTwo[0].amount || 1)) * 100;
-    
+
     return {
       value: Math.abs(trend).toFixed(1),
       isUp: trend > 0,
@@ -286,18 +286,17 @@ export default function CostAnalytics() {
               <button
                 key={period}
                 onClick={() => setSelectedPeriod(period)}
-                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${
-                  selectedPeriod === period
+                className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${selectedPeriod === period
                     ? "bg-blue-500 text-white"
                     : "text-gray-400 hover:text-white"
-                }`}
+                  }`}
               >
                 {period}
               </button>
             ))}
           </div>
 
-          <button 
+          <button
             onClick={refreshData}
             className="p-2 bg-slate-900/50 backdrop-blur-xl rounded-xl border border-slate-800 hover:border-blue-500/50 transition-all"
           >
@@ -406,7 +405,14 @@ export default function CostAnalytics() {
               <span className="text-xs text-gray-500 px-3 py-1 bg-slate-800 rounded-full">By service</span>
             </div>
             <div className="h-[300px] flex items-center justify-center">
-              {pieData && <Pie data={pieData} options={chartOptions} />}
+              {pieData && pieData.datasets[0].data.reduce((a: number,b: number)=>a+b, 0) > 0 ? (
+                <Pie data={pieData} options={chartOptions} />
+              ) : (
+                <div className="flex flex-col items-center justify-center text-gray-500">
+                  <PieChart className="w-10 h-10 mb-2 opacity-20" />
+                  <p className="text-sm">No cost data</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -471,20 +477,20 @@ export default function CostAnalytics() {
                 .sort((a: any, b: any) => b.cost - a.cost)
                 .slice(0, 5)
                 .map((i: any, idx: number) => (
-                <div key={i.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-all">
-                  <div className="flex items-center gap-3">
-                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
+                  <div key={i.id} className="flex items-center justify-between p-3 bg-slate-800/50 rounded-xl hover:bg-slate-800 transition-all">
+                    <div className="flex items-center gap-3">
+                      <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold
                       ${idx === 0 ? 'bg-yellow-500/20 text-yellow-400' :
-                        idx === 1 ? 'bg-gray-400/20 text-gray-400' :
-                        idx === 2 ? 'bg-orange-500/20 text-orange-400' :
-                        'bg-blue-500/20 text-blue-400'}`}>
-                      #{idx + 1}
+                          idx === 1 ? 'bg-gray-400/20 text-gray-400' :
+                            idx === 2 ? 'bg-orange-500/20 text-orange-400' :
+                              'bg-blue-500/20 text-blue-400'}`}>
+                        #{idx + 1}
+                      </div>
+                      <span className="text-gray-300">{i.id}</span>
                     </div>
-                    <span className="text-gray-300">{i.id}</span>
+                    <span className="font-medium text-white">{formatCost(i.cost)}</span>
                   </div>
-                  <span className="font-medium text-white">{formatCost(i.cost)}</span>
-                </div>
-              ))}
+                ))}
             </div>
           </div>
         </div>
@@ -510,27 +516,24 @@ export default function CostAnalytics() {
                 data.insights.map((insight: any, idx: number) => (
                   <div
                     key={idx}
-                    className={`p-4 rounded-xl border ${
-                      insight.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20' :
-                      insight.type === 'warning' ? 'bg-yellow-500/10 border-yellow-500/20' :
-                      'bg-red-500/10 border-red-500/20'
-                    }`}
+                    className={`p-4 rounded-xl border ${insight.type === 'success' ? 'bg-emerald-500/10 border-emerald-500/20' :
+                        insight.type === 'warning' ? 'bg-yellow-500/10 border-yellow-500/20' :
+                          'bg-red-500/10 border-red-500/20'
+                      }`}
                   >
                     <div className="flex items-start gap-3">
-                      <AlertTriangle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${
-                        insight.type === 'success' ? 'text-emerald-400' :
-                        insight.type === 'warning' ? 'text-yellow-400' :
-                        'text-red-400'
-                      }`} />
+                      <AlertTriangle className={`w-5 h-5 mt-0.5 flex-shrink-0 ${insight.type === 'success' ? 'text-emerald-400' :
+                          insight.type === 'warning' ? 'text-yellow-400' :
+                            'text-red-400'
+                        }`} />
                       <div className="flex-1">
                         <p className="font-medium text-white mb-1">{insight.message}</p>
                         <p className="text-sm text-gray-400 mb-1">{insight.detail}</p>
                         <p className="text-xs text-gray-500 mb-2">{insight.action}</p>
-                        <p className={`text-xs font-medium ${
-                          insight.type === 'success' ? 'text-emerald-400' :
-                          insight.type === 'warning' ? 'text-yellow-400' :
-                          'text-red-400'
-                        }`}>
+                        <p className={`text-xs font-medium ${insight.type === 'success' ? 'text-emerald-400' :
+                            insight.type === 'warning' ? 'text-yellow-400' :
+                              'text-red-400'
+                          }`}>
                           {insight.impact}
                         </p>
                       </div>
@@ -609,9 +612,8 @@ function KPICard({ title, value, icon: Icon, trend, trendUp, subtitle, badge }: 
         </div>
         {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
         {trend && (
-          <div className={`flex items-center gap-1 text-xs mt-2 ${
-            trendUp ? (trend === 'opportunity' ? 'text-emerald-400' : 'text-emerald-400') : 'text-red-400'
-          }`}>
+          <div className={`flex items-center gap-1 text-xs mt-2 ${trendUp ? (trend === 'opportunity' ? 'text-emerald-400' : 'text-emerald-400') : 'text-red-400'
+            }`}>
             {trend === 'opportunity' ? (
               <TrendingDown className="w-3 h-3" />
             ) : trendUp ? (
@@ -669,9 +671,9 @@ function AlertCard({ title, value, type, icon: Icon, description, savings }: any
       border: 'border-red-500/20',
       bgLight: 'bg-red-500/10',
     },
-  };
+  } as const;
 
-  const config = types[type];
+  const config = types[type as keyof typeof types] ?? types.warning;
 
   return (
     <div className="group relative">
