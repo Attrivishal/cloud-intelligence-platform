@@ -332,8 +332,8 @@ export default function Home() {
 
   const fadeIn = {
     hidden: { opacity: 0, y: 20 },
-    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: "easeOut" } }
-  };
+    visible: { opacity: 1, y: 0, transition: { duration: 0.6, ease: [0.6, 0.05, 0.01, 0.9] as const } }
+  } as const;
 
   const staggerContainer = {
     hidden: { opacity: 0 },
