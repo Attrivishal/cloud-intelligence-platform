@@ -316,7 +316,7 @@ export default function DashboardLayout({
                 </span>
                 <div className="w-px h-4 bg-white/10"></div>
                 <span className="text-xs font-bold text-white">
-                  {esgScore >= 80 ? 'A' : esgScore >= 60 ? 'B' : esgScore >= 40 ? 'C' : 'D'}
+                  {esgScore == null ? '—' : esgScore >= 80 ? 'A' : esgScore >= 60 ? 'B' : esgScore >= 40 ? 'C' : 'D'}
                 </span>
               </div>
             </div>
