@@ -24,7 +24,6 @@ import {
   LineChart as LineChartIcon,
   Network,
   Cpu as CpuIcon,
-  Hdd,
   Globe,
   Box,
   Cloud,
@@ -914,7 +913,7 @@ function KPICard({ title, value, icon: Icon, color, trend, badge, subtitle }: an
     yellow: 'from-yellow-500 to-orange-500',
     red: 'from-red-500 to-pink-500',
     purple: 'from-purple-500 to-pink-500',
-  };
+  } as const;
 
   const iconColors = {
     blue: 'text-blue-400',
@@ -923,7 +922,7 @@ function KPICard({ title, value, icon: Icon, color, trend, badge, subtitle }: an
     yellow: 'text-yellow-400',
     red: 'text-red-400',
     purple: 'text-purple-400',
-  };
+  } as const;
 
   const badgeColors = {
     blue: 'bg-blue-500/20 text-blue-400',
@@ -932,11 +931,15 @@ function KPICard({ title, value, icon: Icon, color, trend, badge, subtitle }: an
     yellow: 'bg-yellow-500/20 text-yellow-400',
     red: 'bg-red-500/20 text-red-400',
     purple: 'bg-purple-500/20 text-purple-400',
-  };
+  } as const;
+
+  const colorClass = colors[color as keyof typeof colors];
+  const iconClass = iconColors[color as keyof typeof iconColors];
+  const badgeClass = badgeColors[color as keyof typeof badgeColors];
 
   return (
     <div className="group relative">
-      <div className={`absolute -inset-0.5 bg-gradient-to-r ${colors[color]} rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500`}></div>
+      <div className={`absolute -inset-0.5 bg-gradient-to-r ${colorClass} rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500`}></div>
       <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl p-5 border border-slate-800 hover:border-blue-500/40 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all duration-300">
         <div className="flex items-start justify-between">
           <div>
@@ -944,7 +947,7 @@ function KPICard({ title, value, icon: Icon, color, trend, badge, subtitle }: an
             <div className="flex items-baseline gap-2">
               <p className="text-3xl font-bold text-white group-hover:scale-105 transition-transform duration-300">{value}</p>
               {badge && (
-                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeColors[color]} animate-pulse`}>
+                <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${badgeClass} animate-pulse`}>
                   {badge}
                 </span>
               )}
@@ -952,7 +955,7 @@ function KPICard({ title, value, icon: Icon, color, trend, badge, subtitle }: an
             {subtitle && <p className="text-xs text-gray-500 mt-1">{subtitle}</p>}
           </div>
           <div className={`p-3 rounded-xl bg-${color}-500/10 group-hover:scale-110 transition-transform duration-300`}>
-            <Icon className={`w-5 h-5 ${iconColors[color]}`} />
+            <Icon className={`w-5 h-5 ${iconClass}`} />
           </div>
         </div>
       </div>
@@ -966,22 +969,25 @@ function ServiceCard({ title, value, subtitle, icon: Icon, color }: any) {
     green: 'text-green-400',
     yellow: 'text-yellow-400',
     purple: 'text-purple-400',
-  };
+  } as const;
 
   const bgColors = {
     blue: 'bg-blue-500/10',
     green: 'bg-green-500/10',
     yellow: 'bg-yellow-500/10',
     purple: 'bg-purple-500/10',
-  };
+  } as const;
+
+  const iconClass = iconColors[color as keyof typeof iconColors];
+  const bgClass = bgColors[color as keyof typeof bgColors];
 
   return (
     <div className="group relative">
       <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
       <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl p-5 border border-slate-800 hover:border-blue-500/40 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all duration-300">
         <div className="flex items-center gap-3">
-          <div className={`p-2 ${bgColors[color]} rounded-lg group-hover:scale-110 transition-transform duration-300`}>
-            <Icon className={`w-4 h-4 ${iconColors[color]}`} />
+          <div className={`p-2 ${bgClass} rounded-lg group-hover:scale-110 transition-transform duration-300`}>
+            <Icon className={`w-4 h-4 ${iconClass}`} />
           </div>
           <div>
             <p className="text-gray-400 text-sm">{title}</p>
@@ -1002,7 +1008,7 @@ function MetricBox({ label, value, icon: Icon, color }: any) {
     purple: 'text-purple-400',
     red: 'text-red-400',
     emerald: 'text-emerald-400',
-  };
+  } as const;
 
   const bgColors = {
     blue: 'bg-blue-500/10',
@@ -1011,13 +1017,16 @@ function MetricBox({ label, value, icon: Icon, color }: any) {
     purple: 'bg-purple-500/10',
     red: 'bg-red-500/10',
     emerald: 'bg-emerald-500/10',
-  };
+  } as const;
+
+  const iconClass = iconColors[color as keyof typeof iconColors];
+  const bgClass = bgColors[color as keyof typeof bgColors];
 
   return (
     <div className="bg-slate-800/30 rounded-xl p-4">
       <div className="flex items-center gap-2 mb-2">
-        <div className={`p-1.5 ${bgColors[color]} rounded-lg`}>
-          <Icon className={`w-3 h-3 ${iconColors[color]}`} />
+        <div className={`p-1.5 ${bgClass} rounded-lg`}>
+          <Icon className={`w-3 h-3 ${iconClass}`} />
         </div>
         <span className="text-xs text-gray-500">{label}</span>
       </div>
