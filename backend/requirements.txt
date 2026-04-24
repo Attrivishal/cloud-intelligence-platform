@@ -4,7 +4,13 @@ sqlalchemy
 psycopg2-binary
 python-dotenv
 boto3
-pydantic
+pydantic[email]
 python-jose[cryptography]
 passlib[bcrypt]
 python-multipart
+email-validator
+scikit-learn
+apscheduler
+numpy
+pytz
+
