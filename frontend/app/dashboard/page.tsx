@@ -563,7 +563,14 @@ export default function DashboardPage() {
                   <span className="text-xs text-gray-500 px-3 py-1 bg-slate-800 rounded-full">By service</span>
                 </div>
                 <div className="h-64">
-                  <Pie data={pieData} options={chartOptions} />
+                  {Number(data.cost.total_cost) > 0 ? (
+                    <Pie data={pieData} options={chartOptions} />
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-gray-500">
+                      <PieChart className="w-10 h-10 mb-2 opacity-20" />
+                      <p className="text-sm">No cost data yet</p>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
@@ -886,29 +893,32 @@ function CostCard({ title, value, icon: Icon, color, percentage }: any) {
     green: 'from-green-500 to-emerald-600',
     yellow: 'from-yellow-500 to-orange-600',
     red: 'from-red-500 to-pink-600',
-  };
+  } as const;
 
   const textColors = {
     blue: 'text-blue-400',
     green: 'text-green-400',
     yellow: 'text-yellow-400',
     red: 'text-red-400',
-  };
+  } as const;
+
+  const colorClass = colors[color as keyof typeof colors];
+  const textColorClass = textColors[color as keyof typeof textColors];
 
   return (
     <div className="group relative">
       <div className="absolute -inset-0.5 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500"></div>
       <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-xl p-4 border border-slate-800 overflow-hidden">
-        <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${colors[color]} rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity`}></div>
+        <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-br ${colorClass} rounded-full blur-3xl opacity-10 group-hover:opacity-20 transition-opacity`}></div>
         <div className="relative z-10">
           <div className="flex items-center justify-between mb-3">
             <p className="text-gray-500 text-sm">{title}</p>
-            <Icon className={`w-4 h-4 ${textColors[color]}`} />
+            <Icon className={`w-4 h-4 ${textColorClass}`} />
           </div>
           <p className="text-xl font-bold text-white mb-2">{value}</p>
           <div className="w-full h-1 bg-slate-800 rounded-full overflow-hidden">
             <div 
-              className={`h-full bg-gradient-to-r ${colors[color]} rounded-full transition-all duration-500 group-hover:opacity-80`}
+              className={`h-full bg-gradient-to-r ${colorClass} rounded-full transition-all duration-500 group-hover:opacity-80`}
               style={{ width: `${percentage}%` }}
             ></div>
           </div>
@@ -932,9 +942,9 @@ function AlertCard({ title, value, type, icon: Icon, description, savings }: any
       border: 'border-red-500/20',
       bgLight: 'bg-red-500/10',
     },
-  };
+  } as const;
 
-  const config = types[type];
+  const config = types[type as keyof typeof types] ?? types.warning;
 
   return (
     <div className="group relative">
