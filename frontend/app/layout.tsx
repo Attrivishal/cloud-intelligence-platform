@@ -13,8 +13,12 @@ export const metadata = {
   description: "AI Powered Cloud Optimization & Forecasting",
   keywords: "AWS, cloud optimization, cost forecasting, sustainability",
   authors: [{ name: "CloudIntel" }],
-  viewport: "width=device-width, initial-scale=1",
-  themeColor: "#0A1929",
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  themeColor: '#0A1929',
 };
 
 export default function RootLayout({
@@ -26,7 +30,6 @@ export default function RootLayout({
     <html lang="en" className={`${inter.variable} scroll-smooth`}>
       <head>
         <link rel="icon" href="/favicon.ico" />
-        <meta name="viewport" content="width=device-width, initial-scale=1" />
       </head>
       <body className="font-sans antialiased min-h-screen bg-[#0A1929] text-gray-100">
         {/* Background Pattern - Subtle Grid */}
