@@ -286,7 +286,14 @@ export default function InfrastructurePage() {
               action="Running vs Stopped"
             >
               <div className="h-[250px] flex items-center justify-center">
-                <Pie data={statusData} options={chartOptions} />
+                {(summary.running_instances + summary.stopped_instances) > 0 ? (
+                  <Pie data={statusData} options={chartOptions} />
+                ) : (
+                  <div className="flex flex-col items-center justify-center text-gray-500">
+                    <Activity className="w-10 h-10 mb-2 opacity-20" />
+                    <p className="text-sm">No instances</p>
+                  </div>
+                )}
               </div>
             </ChartCard>
 
@@ -429,22 +436,25 @@ function KPICard({ title, value, icon: Icon, trend, trendUp, badge, color }: any
     green: 'from-green-500 to-emerald-600',
     red: 'from-red-500 to-pink-600',
     purple: 'from-purple-500 to-pink-500',
-  };
+  } as const;
 
   const iconColors = {
     blue: 'text-blue-400',
     green: 'text-green-400',
     red: 'text-red-400',
     purple: 'text-purple-400',
-  };
+  } as const;
+
+  const colorClass = colors[color as keyof typeof colors];
+  const iconClass = iconColors[color as keyof typeof iconColors];
 
   return (
     <div className="group relative animate-fade-in">
-      <div className={`absolute -inset-0.5 bg-gradient-to-r ${colors[color]} rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500`}></div>
+      <div className={`absolute -inset-0.5 bg-gradient-to-r ${colorClass} rounded-2xl blur opacity-0 group-hover:opacity-20 transition duration-500`}></div>
       <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-xl p-5 border border-slate-800 hover:border-blue-500/40 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all duration-300">
         <div className="flex items-center justify-between mb-2">
           <p className="text-gray-500 text-sm group-hover:text-gray-400 transition-colors">{title}</p>
-          <Icon className={`w-4 h-4 text-gray-600 group-hover:${iconColors[color]} transition-colors`} />
+          <Icon className={`w-4 h-4 text-gray-600 group-hover:${iconClass} transition-colors`} />
         </div>
         <div className="flex items-baseline gap-2">
           <p className="text-2xl font-bold text-white">{value}</p>
@@ -477,21 +487,24 @@ function ChartCard({ title, icon: Icon, color, action, children }: any) {
   const colors = {
     blue: 'from-blue-500 to-purple-600',
     purple: 'from-purple-500 to-pink-600',
-  };
+  } as const;
 
   const iconColors = {
     blue: 'text-blue-400',
     purple: 'text-purple-400',
-  };
+  } as const;
+
+  const colorClass = colors[color as keyof typeof colors];
+  const iconClass = iconColors[color as keyof typeof iconColors];
 
   return (
     <div className="group relative animate-fade-in">
-      <div className={`absolute -inset-0.5 bg-gradient-to-r ${colors[color]} rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
+      <div className={`absolute -inset-0.5 bg-gradient-to-r ${colorClass} rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000`}></div>
       <div className="relative bg-slate-900/80 backdrop-blur-xl rounded-2xl p-6 border border-slate-800 hover:border-blue-500/40 hover:shadow-[0_0_30px_rgba(59,130,246,0.2)] transition-all duration-300">
         <div className="flex justify-between items-center mb-4">
           <div className="flex items-center gap-3">
             <div className={`p-2 bg-${color}-500/10 rounded-xl`}>
-              <Icon className={`w-5 h-5 ${iconColors[color]}`} />
+              <Icon className={`w-5 h-5 ${iconClass}`} />
             </div>
             <h3 className="text-lg font-semibold text-white">{title}</h3>
           </div>
