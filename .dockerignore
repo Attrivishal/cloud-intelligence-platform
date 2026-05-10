@@ -18,6 +18,15 @@ __pycache__/
 .mypy_cache/
 .ruff_cache/
 
+# Node / Next.js
+node_modules/
+.next/
+out/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
 # Local/editor files
 .DS_Store
 .idea/
@@ -25,6 +34,8 @@ __pycache__/
 
 # Project-local scratch and generated artifacts
 scratch/
-*.log
-*.sqlite
-*.db
+**/scratch/
+*.tar
+*.tar.gz
+*.zip
+presentation.pdf
