@@ -6,7 +6,11 @@ import {
   fetchS3,
   fetchRDS,
   fetchLambda,
-} from "../../lib/api";
+  fetchOptimization,
+  fetchOptimizationSummary,
+} from "@/lib/api";
+
+
 
 import {
   Zap,
@@ -31,6 +35,7 @@ import {
   ArrowDownRight,
 } from "lucide-react";
 
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -52,90 +57,36 @@ export default function OptimizationPage() {
   useEffect(() => {
     async function load() {
       try {
-        const [ec2, s3, rds, lambda] = await Promise.all([
+        const [summary, report, ec2, s3, rds, lambda] = await Promise.all([
+          fetchOptimizationSummary(),
+          fetchOptimization(),
           fetchEC2(),
           fetchS3(),
           fetchRDS(),
           fetchLambda(),
         ]);
 
-        /* ======================
-           EC2 OPTIMIZATION
-        ====================== */
-        const underutilizedEC2 = ec2.filter(
-          (i: any) => i.state === "running"
-        ).length;
-
-        const ec2Savings = underutilizedEC2 * 15;
-
-        /* ======================
-           S3 OPTIMIZATION
-        ====================== */
-        const s3Savings = s3.length * 2;
-
-        /* ======================
-           RDS OPTIMIZATION
-        ====================== */
-        const rdsSavings = rds.length * 10;
-
-        /* ======================
-           LAMBDA OPTIMIZATION
-        ====================== */
-        const unusedLambda = lambda.filter(
-          (fn: any) => fn.invocations === 0
-        ).length;
-
-        const lambdaSavings = unusedLambda * 5;
-
-        /* ======================
-           TOTAL
-        ====================== */
-        const totalSavings =
-          ec2Savings + s3Savings + rdsSavings + lambdaSavings;
-
-        const insights: any[] = [];
-
-        if (underutilizedEC2 > 0) {
-          insights.push({
-            type: "warning",
-            message: `${underutilizedEC2} EC2 instances underutilized`,
-            action: "Resize or stop instances",
-            saving: `$${ec2Savings}/month`,
-          });
-        }
-
-        if (unusedLambda > 0) {
-          insights.push({
-            type: "warning",
-            message: `${unusedLambda} unused Lambda functions`,
-            action: "Delete unused functions",
-            saving: `$${lambdaSavings}/month`,
-          });
-        }
-
-        if (rds.length > 0) {
-          insights.push({
-            type: "info",
-            message: `RDS instances can be optimized`,
-            action: "Downgrade instance class",
-            saving: `$${rdsSavings}/month`,
-          });
-        }
+        const insights = report.map((item: any) => ({
+          type: item.status.toLowerCase().includes("risk") ? "warning" : "info",
+          message: `${item.instance_id}: ${item.status}`,
+          action: item.recommendation,
+          saving: item.estimated_monthly_savings > 0 ? `$${item.estimated_monthly_savings}/month` : "Risk Mitigation",
+        }));
 
         setData({
           ec2,
           s3,
           rds,
           lambda,
-          totalSavings,
-          ec2Savings,
-          s3Savings,
-          rdsSavings,
-          lambdaSavings,
-          underutilizedEC2,
-          unusedLambda,
+          totalSavings: summary.total_potential_monthly_savings,
+          ec2Savings: summary.total_potential_monthly_savings * 0.7,
+          s3Savings: summary.total_potential_monthly_savings * 0.1,
+          rdsSavings: summary.total_potential_monthly_savings * 0.1,
+          lambdaSavings: summary.total_potential_monthly_savings * 0.1,
+          underutilizedEC2: summary.underutilized_instances,
+          unusedLambda: lambda.filter((fn: any) => fn.invocations === 0).length,
           insights,
-          score: Math.max(100 - (underutilizedEC2 * 10 + unusedLambda * 5), 50),
+          score: summary.optimization_score,
         });
 
         setLastUpdated(new Date());
@@ -146,97 +97,53 @@ export default function OptimizationPage() {
       }
     }
 
+
     load();
   }, []);
 
-  const refreshData = () => {
+  const refreshData = async () => {
     setLoading(true);
-    Promise.all([fetchEC2(), fetchS3(), fetchRDS(), fetchLambda()])
-      .then(([ec2, s3, rds, lambda]) => {
-        /* ======================
-           EC2 OPTIMIZATION
-        ====================== */
-        const underutilizedEC2 = ec2.filter(
-          (i: any) => i.state === "running"
-        ).length;
+    try {
+      const [summary, report, ec2, s3, rds, lambda] = await Promise.all([
+        fetchOptimizationSummary(),
+        fetchOptimization(),
+        fetchEC2(),
+        fetchS3(),
+        fetchRDS(),
+        fetchLambda(),
+      ]);
 
-        const ec2Savings = underutilizedEC2 * 15;
+      const insights = report.map((item: any) => ({
+        type: item.status.toLowerCase().includes("risk") ? "warning" : "info",
+        message: `${item.instance_id}: ${item.status}`,
+        action: item.recommendation,
+        saving: item.estimated_monthly_savings > 0 ? `$${item.estimated_monthly_savings}/month` : "Risk Mitigation",
+      }));
 
-        /* ======================
-           S3 OPTIMIZATION
-        ====================== */
-        const s3Savings = s3.length * 2;
+      setData({
+        ec2,
+        s3,
+        rds,
+        lambda,
+        totalSavings: summary.total_potential_monthly_savings,
+        ec2Savings: summary.total_potential_monthly_savings * 0.7,
+        s3Savings: summary.total_potential_monthly_savings * 0.1,
+        rdsSavings: summary.total_potential_monthly_savings * 0.1,
+        lambdaSavings: summary.total_potential_monthly_savings * 0.1,
+        underutilizedEC2: summary.underutilized_instances,
+        unusedLambda: lambda.filter((fn: any) => fn.invocations === 0).length,
+        insights,
+        score: summary.optimization_score,
+      });
 
-        /* ======================
-           RDS OPTIMIZATION
-        ====================== */
-        const rdsSavings = rds.length * 10;
-
-        /* ======================
-           LAMBDA OPTIMIZATION
-        ====================== */
-        const unusedLambda = lambda.filter(
-          (fn: any) => fn.invocations === 0
-        ).length;
-
-        const lambdaSavings = unusedLambda * 5;
-
-        /* ======================
-           TOTAL
-        ====================== */
-        const totalSavings =
-          ec2Savings + s3Savings + rdsSavings + lambdaSavings;
-
-        const insights: any[] = [];
-
-        if (underutilizedEC2 > 0) {
-          insights.push({
-            type: "warning",
-            message: `${underutilizedEC2} EC2 instances underutilized`,
-            action: "Resize or stop instances",
-            saving: `$${ec2Savings}/month`,
-          });
-        }
-
-        if (unusedLambda > 0) {
-          insights.push({
-            type: "warning",
-            message: `${unusedLambda} unused Lambda functions`,
-            action: "Delete unused functions",
-            saving: `$${lambdaSavings}/month`,
-          });
-        }
-
-        if (rds.length > 0) {
-          insights.push({
-            type: "info",
-            message: `RDS instances can be optimized`,
-            action: "Downgrade instance class",
-            saving: `$${rdsSavings}/month`,
-          });
-        }
-
-        setData({
-          ec2,
-          s3,
-          rds,
-          lambda,
-          totalSavings,
-          ec2Savings,
-          s3Savings,
-          rdsSavings,
-          lambdaSavings,
-          underutilizedEC2,
-          unusedLambda,
-          insights,
-          score: Math.max(100 - (underutilizedEC2 * 10 + unusedLambda * 5), 50),
-        });
-
-        setLastUpdated(new Date());
-        setLoading(false);
-      })
-      .catch(console.error);
+      setLastUpdated(new Date());
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
   };
+
 
   const format = (v: number) => "$" + (v || 0).toFixed(2);
 
@@ -355,9 +262,10 @@ export default function OptimizationPage() {
                 <Zap className="w-6 h-6 text-white" />
               </div>
               <div>
-                <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
-                  Optimization Intelligence
+                <h1 className="text-3xl lg:text-4xl font-bold bg-gradient-to-r from-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                  Operations Intelligence
                 </h1>
+
                 <div className="flex items-center gap-2 mt-1">
                   <div className="h-0.5 w-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full animate-pulse"></div>
                   <p className="text-gray-500 text-sm">
@@ -448,8 +356,9 @@ export default function OptimizationPage() {
 
           {/* AI Insights */}
           <Section
-            title="AI Insights"
-            icon={Sparkles}
+            title="Infrastructure Insights"
+            icon={Activity}
+
             color="purple"
             count={data.insights.length}
             animate="slide-up"
@@ -480,14 +389,15 @@ export default function OptimizationPage() {
           >
             {data.ec2.map((i: any, idx: number) => (
               <ResourceRow
-                key={i.instance_id}
-                name={i.instance_id}
-                type={i.instance_type}
+                key={i.id || i.instance_id || idx}
+                name={i.id || i.instance_id}
+                type={i.type || i.instance_type}
                 state={i.state}
                 extra={i.state === "stopped" ? "STOPPED ⚠️" : "RUNNING"}
                 index={idx}
               />
             ))}
+
           </Section>
 
           {/* S3 Optimization */}
@@ -522,14 +432,15 @@ export default function OptimizationPage() {
           >
             {data.rds.map((db: any, idx: number) => (
               <RDSRow
-                key={db.db_identifier}
-                name={db.db_identifier}
+                key={db.id || db.db_identifier || idx}
+                name={db.id || db.db_identifier}
                 engine={db.engine}
-                storage={db.allocated_storage}
+                storage={db.storage || db.allocated_storage}
                 risk={db.risk}
                 index={idx}
               />
             ))}
+
           </Section>
 
           {/* Lambda Optimization */}

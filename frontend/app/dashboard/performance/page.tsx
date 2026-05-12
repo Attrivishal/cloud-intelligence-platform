@@ -83,47 +83,9 @@ export default function PerformancePage() {
             ? c.trend
             : [];
 
-        // ✅ FALLBACK DATA if API returns empty
+        // ✅ Real data only
         if (safeData.length === 0) {
-          console.warn("⚠️ CPU data empty — using fallback for demo");
-          
-          setCpuTrend([
-            {
-              instance_id: "i-12345",
-              instance_type: "t3.micro",
-              average_cpu: 0.25,
-              date: "10:00",
-              region: "us-east-1"
-            },
-            {
-              instance_id: "i-67890",
-              instance_type: "t3.small",
-              average_cpu: 0.65,
-              date: "10:05",
-              region: "us-east-1"
-            },
-            {
-              instance_id: "i-54321",
-              instance_type: "t3.medium",
-              average_cpu: 0.45,
-              date: "10:10",
-              region: "us-west-2"
-            },
-            {
-              instance_id: "i-98765",
-              instance_type: "t3.large",
-              average_cpu: 0.15,
-              date: "10:15",
-              region: "eu-west-1"
-            },
-            {
-              instance_id: "i-24680",
-              instance_type: "t3.xlarge",
-              average_cpu: 0.85,
-              date: "10:20",
-              region: "ap-southeast-1"
-            },
-          ]);
+          setCpuTrend([]);
         } else {
           setCpuTrend(safeData);
         }
@@ -132,28 +94,12 @@ export default function PerformancePage() {
         setLastUpdated(new Date());
       } catch (error) {
         console.error("Failed to load performance data:", error);
-        
-        // ✅ FALLBACK ON ERROR
-        setCpuTrend([
-          {
-            instance_id: "i-12345",
-            instance_type: "t3.micro",
-            average_cpu: 0.25,
-            date: "10:00",
-            region: "us-east-1"
-          },
-          {
-            instance_id: "i-67890",
-            instance_type: "t3.small",
-            average_cpu: 0.65,
-            date: "10:05",
-            region: "us-east-1"
-          },
-        ]);
+        setCpuTrend([]);
       } finally {
         setLoading(false);
       }
     }
+
 
     load();
   }, []);
@@ -171,16 +117,17 @@ export default function PerformancePage() {
 
   const avgCPU = cpuValues.length
     ? cpuValues.reduce((a, b) => a + b, 0) / cpuValues.length
-    : 45; // Fallback if empty
+    : 0;
 
-  const peakCPU = Math.max(...cpuValues, 85);
-  const minCPU = Math.min(...cpuValues, 15);
+  const peakCPU = cpuValues.length ? Math.max(...cpuValues) : 0;
+  const minCPU = cpuValues.length ? Math.min(...cpuValues) : 0;
 
   /* ================= SMART METRICS ================= */
 
-  const avgMemory = Math.min(avgCPU + 15, 95);
+  const avgMemory = avgCPU > 0 ? Math.min(avgCPU + 15, 95) : 0;
   const avgNetIn = avgCPU * 0.4;
   const avgNetOut = avgCPU * 0.3;
+
 
   const getStatus = (cpu: number) => {
     if (cpu > 80) return { text: "Critical", color: "text-red-400", bg: "bg-red-500/10" };
@@ -504,10 +451,11 @@ export default function PerformancePage() {
                         ) : (
                           enrichedInstances.map((i, idx) => (
                             <tr 
-                              key={i.id} 
+                              key={`${i.id}-${idx}`} 
                               className="hover:bg-slate-800/50 transition-colors duration-150 group/row animate-fade-in"
                               style={{ animationDelay: `${idx * 50}ms` }}
                             >
+
                               <td className="py-3">
                                 <div className="flex items-center gap-2">
                                   <Server className="w-4 h-4 text-gray-500 group-hover/row:text-blue-400 transition-colors" />

@@ -1,4 +1,6 @@
 "use client";
+import { useEffect, useState } from "react";
+
 
 import {
   LineChart,
@@ -18,16 +20,25 @@ type Props = {
 };
 
 export default function CostChart({ data }: Props) {
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
   const formatted = data.map((item) => ({
     ...item,
     amount: Math.abs(item.amount),
   }));
 
-  return (
-    <div className="bg-slate-900 border border-slate-800 p-6 rounded-xl h-[350px]">
-      <h2 className="text-sm text-slate-400 mb-6">Cost Trend (Last 30 Days)</h2>
+  if (!mounted) return <div className="h-[350px]" />;
 
-      <ResponsiveContainer width="100%" height="85%">
+  return (
+    <div className="bg-slate-900/50 backdrop-blur-xl border border-slate-800 p-6 rounded-xl h-[350px] w-full">
+      <h2 className="text-sm text-slate-400 mb-6">Historical Cost Performance</h2>
+
+      <ResponsiveContainer width="100%" height="90%">
+
         <LineChart data={formatted}>
           <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" />
           <XAxis

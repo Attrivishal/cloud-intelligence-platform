@@ -1,21 +1,29 @@
 "use client";
 
+import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+
 import { fetchSustainability } from "@/lib/api";
 import Card from "@/components/Card";
 
 export default function SustainabilityPage() {
+  const router = useRouter();
   const [data, setData] = useState<any>(null);
+
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [hoveredCard, setHoveredCard] = useState<string | null>(null);
 
   useEffect(() => {
     async function load() {
       try {
         const res = await fetchSustainability();
+        console.log("Sustainability Data:", res);
         setData(res);
-      } catch (err) {
+        setError(null);
+      } catch (err: any) {
         console.error("Sustainability Load Error:", err);
+        setError(err.message || "Failed to load sustainability metrics");
       } finally {
         setLoading(false);
       }
@@ -27,44 +35,45 @@ export default function SustainabilityPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-[#0A1929] flex items-center justify-center relative overflow-hidden">
-        {/* Animated nature-inspired background */}
-        <div className="absolute top-20 left-1/4 w-72 h-72 bg-emerald-500/10 rounded-full blur-3xl animate-pulse"></div>
-        <div className="absolute bottom-20 right-1/4 w-72 h-72 bg-green-500/10 rounded-full blur-3xl animate-pulse delay-1000"></div>
-        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-96 h-96 bg-emerald-400/5 rounded-full blur-3xl"></div>
-        
-        <div className="relative text-center">
-          <div className="relative">
-            {/* Animated leaf spinner */}
-            <div className="w-20 h-20 relative mx-auto mb-4">
-              <div className="absolute inset-0 border-4 border-emerald-500/30 border-t-emerald-500 rounded-full animate-spin"></div>
-              <div className="absolute inset-2 bg-gradient-to-br from-emerald-400 to-green-500 rounded-full animate-pulse opacity-20"></div>
-              <svg className="absolute inset-0 w-full h-full text-emerald-400 animate-bounce" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2 2 2 0 012 2v2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-              </svg>
-            </div>
-          </div>
-          <p className="text-gray-200 mt-4 font-medium text-lg">Analyzing sustainability metrics...</p>
-          <p className="text-xs text-emerald-400/70 mt-2">Calculating carbon footprint & green efficiency</p>
+        <div className="text-center">
+           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-emerald-500 mx-auto"></div>
+           <p className="text-gray-400 mt-4">Analyzing cloud footprint...</p>
         </div>
       </div>
     );
   }
 
-  if (!data) return null;
+  if (error) {
+    return (
+      <div className="min-h-screen bg-[#0A1929] flex items-center justify-center">
+        <div className="bg-red-500/10 border border-red-500/20 p-8 rounded-2xl text-center">
+           <h2 className="text-white font-bold mb-2">Connection Error</h2>
+           <p className="text-gray-400">{error}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!data) return (
+    <div className="min-h-screen bg-[#0A1929] flex items-center justify-center">
+      <p className="text-gray-400">No data available</p>
+    </div>
+  );
 
   const {
-    total_running_instances,
-    estimated_daily_carbon_kg,
-    sustainability_score,
-    rating,
-    recommendation,
-    green_efficiency_level,
+    total_running_instances = 0,
+    estimated_daily_carbon_kg = 0,
+    sustainability_score = 100,
+    rating = "Excellent",
+    recommendation = "No active infrastructure detected.",
+    green_efficiency_level = "Excellent",
   } = data;
 
+
   const formattedCarbon =
-    estimated_daily_carbon_kg < 0.001
-      ? estimated_daily_carbon_kg.toFixed(6)
-      : estimated_daily_carbon_kg.toFixed(2);
+    (estimated_daily_carbon_kg ?? 0) < 0.001
+      ? (estimated_daily_carbon_kg ?? 0).toFixed(6)
+      : (estimated_daily_carbon_kg ?? 0).toFixed(2);
 
   // 🔥 Upgrade 2: Dynamic score color
   const getScoreColor = (score: number) => {
@@ -204,8 +213,8 @@ export default function SustainabilityPage() {
                 <p className="text-sm font-medium text-gray-400 uppercase tracking-wider">Sustainability Score</p>
                 <div className="flex items-baseline gap-2 mt-1">
                   {/* 🔥 Upgrade 2: Dynamic color based on score */}
-                  <h2 className={`text-4xl font-bold ${getScoreColor(sustainability_score)}`}>
-                    {sustainability_score.toFixed(2)}
+                  <h2 className={`text-4xl font-bold ${getScoreColor(sustainability_score || 0)}`}>
+                    {(sustainability_score || 0).toFixed(2)}
                   </h2>
                   <span className="text-xs text-gray-500">/100</span>
                 </div>
@@ -223,7 +232,7 @@ export default function SustainabilityPage() {
             <div className="space-y-2">
               <div className="flex justify-between text-xs">
                 <span className="text-gray-500">AI-calculated green index</span>
-                <span className="text-gray-300">{sustainability_score.toFixed(1)}%</span>
+                <span className="text-gray-300">{(sustainability_score || 0).toFixed(1)}%</span>
               </div>
               <div className="relative h-2 bg-white/10 rounded-full overflow-hidden">
                 <div 
@@ -390,11 +399,13 @@ export default function SustainabilityPage() {
               <p className="text-2xl font-bold text-white">{formattedCarbon} kg CO₂</p>
               <div className="mt-3 flex items-center gap-2">
                 <div className="w-full h-1.5 bg-white/10 rounded-full overflow-hidden">
-                  <div className="h-full w-3/4 bg-emerald-500 rounded-full"></div>
+                  <div 
+                    className="h-full bg-emerald-500" 
+                    style={{ width: `${sustainability_score}%` }}
+                  ></div>
                 </div>
-                <span className="text-xs text-gray-400">75%</span>
+                <span className="text-xs text-gray-400">{Math.round(sustainability_score)}%</span>
               </div>
-              {/* 🔥 Upgrade 1: Carbon Context */}
               <p className="text-xs text-gray-500 mt-2">
                 {getCarbonContext()}
               </p>
@@ -404,18 +415,20 @@ export default function SustainabilityPage() {
             <div className="bg-white/5 rounded-lg p-5 border border-white/10">
               <p className="text-xs text-gray-400 mb-2">Monthly Projection</p>
               <p className="text-2xl font-bold text-white">
-                {(estimated_daily_carbon_kg * 30).toFixed(2)} kg
+                {((estimated_daily_carbon_kg || 0) * 30).toFixed(2)} kg
               </p>
-              <p className="text-xs text-emerald-400 mt-2">↓ 12% vs last month</p>
+              <p className="text-xs text-emerald-400 mt-2">
+                {(sustainability_score > 70) ? "↓ 12% vs last month" : "↑ 5% trend"}
+              </p>
             </div>
 
             {/* Trees Offset Equivalent */}
             <div className="bg-white/5 rounded-lg p-5 border border-white/10">
               <p className="text-xs text-gray-400 mb-2">Trees Needed to Offset</p>
               <p className="text-2xl font-bold text-white">
-                {Math.ceil(estimated_daily_carbon_kg * 0.15)}
+                {Math.ceil(estimated_daily_carbon_kg * 15) || 0}
               </p>
-              <p className="text-xs text-gray-400 mt-2">per day</p>
+              <p className="text-xs text-gray-400 mt-2">per month</p>
             </div>
           </div>
         </div>
@@ -437,7 +450,7 @@ export default function SustainabilityPage() {
             <div className="flex-1">
               <div className="flex items-center gap-2 mb-3">
                 <h3 className="text-xl font-bold text-emerald-400">
-                  AI Sustainability Recommendation
+                  Infrastructure Insights
                 </h3>
                 <span className={`px-2 py-1 rounded-full text-xs ${ratingStyle.bg} ${ratingStyle.text}`}>
                   {rating} Rating
@@ -452,27 +465,39 @@ export default function SustainabilityPage() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 <div className="bg-white/5 rounded-lg p-3">
                   <p className="text-xs text-gray-400 mb-1">Potential Carbon Reduction</p>
-                  <p className="text-lg font-bold text-emerald-400">-15%</p>
+                  <p className="text-lg font-bold text-emerald-400">
+                    {sustainability_score > 80 ? "-5%" : "-22%"}
+                  </p>
                 </div>
                 <div className="bg-white/5 rounded-lg p-3">
-                  <p className="text-xs text-gray-400 mb-1">Annual Savings</p>
-                  <p className="text-lg font-bold text-emerald-400">$2.4K</p>
+                  <p className="text-xs text-gray-400 mb-1">Estimated Annual Savings</p>
+                  <p className="text-lg font-bold text-emerald-400">
+                    ${(total_running_instances * 120).toLocaleString()}
+                  </p>
                 </div>
                 <div className="bg-white/5 rounded-lg p-3">
-                  <p className="text-xs text-gray-400 mb-1">Green Score Impact</p>
-                  <p className="text-lg font-bold text-emerald-400">+8 pts</p>
+                  <p className="text-xs text-gray-400 mb-1">Efficiency Target</p>
+                  <p className="text-lg font-bold text-emerald-400">95%</p>
                 </div>
               </div>
+
               
               {/* Action Buttons */}
               <div className="flex gap-4 mt-6">
-                <button className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 transform hover:scale-105">
+                <button 
+                  onClick={() => router.push("/dashboard/optimization")}
+                  className="px-6 py-3 bg-gradient-to-r from-emerald-500 to-green-500 text-white rounded-xl font-medium hover:shadow-lg hover:shadow-emerald-500/30 transition-all duration-300 transform hover:scale-105"
+                >
                   Implement Recommendations
                 </button>
-                <button className="px-6 py-3 border border-white/10 rounded-xl text-gray-300 hover:bg-white/5 transition-all duration-300">
+                <button 
+                  onClick={() => router.push("/dashboard/optimization")}
+                  className="px-6 py-3 border border-white/10 rounded-xl text-gray-300 hover:bg-white/5 transition-all duration-300"
+                >
                   View Details
                 </button>
               </div>
+
             </div>
           </div>
         </div>

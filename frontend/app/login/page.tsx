@@ -33,7 +33,11 @@ export default function Login() {
       }
 
       localStorage.setItem("token", data.access_token);
+      if (data.user) {
+        localStorage.setItem("user", JSON.stringify(data.user));
+      }
       router.push("/dashboard");
+
     } catch (err) {
       setError("Server error");
       setIsLoading(false);

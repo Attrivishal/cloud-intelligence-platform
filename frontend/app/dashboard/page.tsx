@@ -1,7 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { fetchOverview } from "@/lib/api";
+
 import {
   DollarSign,
   Server,
@@ -75,6 +77,8 @@ export default function DashboardPage() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
   const [lastUpdated, setLastUpdated] = useState<Date>(new Date());
+  const router = useRouter();
+
 
   useEffect(() => {
     fetchOverview()
@@ -239,7 +243,8 @@ export default function DashboardPage() {
     );
   }
 
-  /* ================= CHART DATA ================= */
+  /* ================= ANALYTICS DATA ================= */
+
   
   const lineData = {
     labels: data.forecast.forecast.map((f: any) => f.date),
@@ -328,35 +333,11 @@ export default function DashboardPage() {
     },
   };
 
-  /* ================= AI INSIGHTS ================= */
-  
-  const insights = [];
-  if (data.ec2.underutilized > 0) {
-    insights.push({
-      type: "warning",
-      message: `You have ${data.ec2.underutilized} EC2 instances running below 20% CPU`,
-      action: "→ Recommended: downgrade to t2.micro",
-      impact: `💰 Estimated savings: $${getUnderutilizedSavings()}/month`,
-    });
-  }
-  if (data.lambda.unused_functions > 0) {
-    insights.push({
-      type: "warning",
-      message: `${data.lambda.unused_functions} unused Lambda functions found`,
-      action: "→ Remove to reduce costs",
-      impact: "📦 Clean up recommended",
-    });
-  }
-  if (data.rds.low_storage > 0) {
-    insights.push({
-      type: "danger",
-      message: `${data.rds.low_storage} RDS databases running low on storage`,
-      action: "→ Increase storage capacity soon",
-      impact: "⚠️ Action required within 7 days",
-    });
-  }
+  const insights = data.insights || [];
 
-  /* ================= TOP RESOURCES ================= */
+
+  /* ================= INFRASTRUCTURE METRICS ================= */
+
   
   const topEC2 = [...data.ec2.instances]
     .sort((a: any, b: any) => b.cost - a.cost)
@@ -389,9 +370,10 @@ export default function DashboardPage() {
           <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center mb-8 gap-4">
             <div className="group">
               <h1 className="text-4xl font-bold">
-                <span className="bg-gradient-to-r from-blue-400 via-purple-400 to-pink-400 bg-clip-text text-transparent animate-gradient">
-                  Cloud Intelligence
+                <span className="bg-gradient-to-r from-blue-400 via-slate-400 to-indigo-400 bg-clip-text text-transparent">
+                  Cloud Management Console
                 </span>
+
               </h1>
               <div className="flex items-center gap-2 mt-2">
                 <div className="h-0.5 w-8 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
@@ -411,8 +393,9 @@ export default function DashboardPage() {
                 </span>
               </div>
               <button className="p-3 bg-gradient-to-br from-slate-900 to-slate-800 rounded-2xl border border-slate-700 hover:border-blue-500/50 transition-all group">
-                <Sparkles className="w-5 h-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
+                <Activity className="w-5 h-5 text-gray-400 group-hover:text-blue-400 transition-colors" />
               </button>
+
             </div>
           </div>
 
@@ -483,7 +466,8 @@ export default function DashboardPage() {
                   <div className="p-2 bg-amber-500/10 rounded-xl">
                     <TrendingUp className="w-5 h-5 text-amber-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-white">🔥 Top Cost Contributors</h3>
+                  <h3 className="text-lg font-semibold text-white">Resource Cost Distribution</h3>
+
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                   {topCostContributors.map((item, idx) => (
@@ -652,10 +636,11 @@ export default function DashboardPage() {
               <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
               <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-2xl p-6 border border-slate-800">
                 <div className="flex items-center gap-3 mb-6">
-                  <div className="p-2 bg-purple-500/10 rounded-xl">
-                    <Sparkles className="w-5 h-5 text-purple-400" />
+                  <div className="p-2 bg-blue-500/10 rounded-xl">
+                    <Activity className="w-5 h-5 text-blue-400" />
                   </div>
-                  <h3 className="text-lg font-semibold text-white">AI Insights</h3>
+                  <h3 className="text-lg font-semibold text-white">Optimization Insights</h3>
+
                 </div>
                 {insights.length === 0 ? (
                   <div className="text-center py-12">
@@ -803,10 +788,14 @@ export default function DashboardPage() {
                   </div>
                 </div>
 
-                <button className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group">
+                <button 
+                  onClick={() => router.push("/dashboard/optimization")}
+                  className="w-full py-4 bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-xl font-medium hover:from-blue-600 hover:to-purple-700 transition-all transform hover:scale-[1.02] active:scale-[0.98] flex items-center justify-center gap-2 group"
+                >
                   <span>View Optimization Report</span>
                   <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                 </button>
+
               </div>
             </div>
           </div>

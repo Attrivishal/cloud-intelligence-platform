@@ -47,54 +47,72 @@ export default function DashboardLayout({
     loadESG();
 
     // Load user data from localStorage or token
-    const loadUserData = () => {
+    const loadUserData = async () => {
       try {
-        const userData = localStorage.getItem("user");
-        if (userData) {
-          const user = JSON.parse(userData);
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        // Try to get from localStorage first for immediate display
+        const savedUser = localStorage.getItem("user");
+        if (savedUser) {
+          const user = JSON.parse(savedUser);
           setUserName(user.name || "");
           setUserEmail(user.email || "");
+          updateInitials(user.name);
+        }
+
+        // Always verify with the server to be "real"
+        try {
+          const res = await fetch(`http://127.0.0.1:8000/auth/me?token=${token}`);
+          if (res.ok) {
+            const data = await res.json();
+            setUserName(data.name);
+            setUserEmail(data.email);
+            updateInitials(data.name);
+            localStorage.setItem("user", JSON.stringify(data));
+          }
+        } catch (apiErr) {
+          console.error("Error fetching user profile:", apiErr);
           
-          if (user.name) {
-            const nameParts = user.name.split(" ");
-            if (nameParts.length >= 2) {
-              setUserInitials(`${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase());
-            } else if (nameParts.length === 1) {
-              setUserInitials(nameParts[0].substring(0, 2).toUpperCase());
-            }
-          }
-        } else {
-          const token = localStorage.getItem("token");
-          if (token) {
-            try {
-              const base64Url = token.split('.')[1];
-              const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-              const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
-                return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-              }).join(''));
-              
-              const decoded = JSON.parse(jsonPayload);
-              if (decoded.name) {
-                setUserName(decoded.name);
-                const nameParts = decoded.name.split(" ");
-                if (nameParts.length >= 2) {
-                  setUserInitials(`${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase());
-                } else {
-                  setUserInitials(decoded.name.substring(0, 2).toUpperCase());
-                }
-              }
-              if (decoded.email) setUserEmail(decoded.email);
-            } catch (e) {
-              console.error("Error decoding token:", e);
-            }
-          }
+          // Fallback to token decoding if API fails
+          decodeFromToken(token);
         }
       } catch (error) {
         console.error("Error loading user data:", error);
       }
     };
 
+    const updateInitials = (name: string) => {
+      if (!name) return;
+      const nameParts = name.split(" ");
+      if (nameParts.length >= 2) {
+        setUserInitials(`${nameParts[0][0]}${nameParts[1][0]}`.toUpperCase());
+      } else {
+        setUserInitials(name.substring(0, 2).toUpperCase());
+      }
+    };
+
+    const decodeFromToken = (token: string) => {
+      try {
+        const base64Url = token.split('.')[1];
+        const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+        const jsonPayload = decodeURIComponent(atob(base64).split('').map(function(c) {
+          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
+        }).join(''));
+        
+        const decoded = JSON.parse(jsonPayload);
+        if (decoded.name) {
+          setUserName(decoded.name);
+          updateInitials(decoded.name);
+        }
+        if (decoded.sub) setUserEmail(decoded.sub);
+      } catch (e) {
+        console.error("Error decoding token:", e);
+      }
+    };
+
     loadUserData();
+
 
     // Load sidebar preference from localStorage
     const savedState = localStorage.getItem("sidebarCollapsed");
@@ -163,57 +181,64 @@ export default function DashboardLayout({
       <aside
         className={`
           fixed md:relative z-50 
-          ${sidebarCollapsed ? 'w-20' : 'w-64'} 
-          bg-gradient-to-b from-[#0F1F2F] to-[#1A2A4A]
-          border-r border-white/10
-          transition-all duration-300
+          ${sidebarCollapsed ? 'w-20' : 'w-72'} 
+          bg-[#0F1F2F]/95 backdrop-blur-2xl
+          border-r border-white/5
+          transition-all duration-500 ease-in-out
           ${open ? "translate-x-0" : "-translate-x-full"}
           md:translate-x-0
-          shadow-2xl shadow-black/50
+          shadow-[20px_0_50px_-20px_rgba(0,0,0,0.5)]
           flex flex-col h-screen
         `}
       >
         {/* Sidebar Header */}
-        <div className={`h-20 flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between px-4'} border-b border-white/10 bg-[#0F1F2F]`}>
+        <div className={`h-24 flex items-center ${sidebarCollapsed ? 'justify-center px-2' : 'justify-between px-6'} border-b border-white/5 bg-gradient-to-r from-[#0F1F2F] to-[#14253A]`}>
           {!sidebarCollapsed ? (
             <>
-              <Link href="/dashboard" className="flex items-center gap-3 group" onClick={handleNavClick}>
-                <div className="w-10 h-10 bg-gradient-to-br from-[#4A6FA5] to-[#5B7AB5] rounded-xl flex items-center justify-center shadow-lg shadow-[#4A6FA5]/30 group-hover:scale-110 group-hover:shadow-[#4A6FA5]/50 transition-all duration-300">
-                  <Cloud className="w-5 h-5 text-white" strokeWidth={1.5} />
+              <Link href="/dashboard" className="flex items-center gap-3.5 group" onClick={handleNavClick}>
+                <div className="relative">
+                  <div className="absolute -inset-1 bg-gradient-to-br from-[#4A6FA5] to-[#5B7AB5] rounded-xl blur-sm opacity-50 group-hover:opacity-100 transition duration-500"></div>
+                  <div className="relative w-11 h-11 bg-[#0F1F2F] rounded-xl flex items-center justify-center border border-white/10 group-hover:scale-105 transition-all duration-300">
+                    <Cloud className="w-6 h-6 text-[#5B7AB5]" strokeWidth={2} />
+                  </div>
                 </div>
                 <div className="flex flex-col">
-                  <span className="text-lg font-bold bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent tracking-tight">
-                    cloud<span className="text-[#5B7AB5]">intel</span>
+                  <span className="text-xl font-black text-white tracking-tighter leading-none">
+                    CLOUD<span className="text-[#5B7AB5]">INTEL</span>
                   </span>
-                  <span className="text-[10px] text-gray-500 tracking-wider">AI CLOUD PLATFORM</span>
+                  <span className="text-[10px] text-[#5B7AB5] font-bold tracking-[0.2em] mt-1 opacity-70">AI POWERED</span>
                 </div>
               </Link>
               <button
                 onClick={toggleSidebar}
-                className="hidden md:block p-1.5 rounded-lg hover:bg-white/10 transition group"
+                className="hidden md:flex p-2 rounded-xl hover:bg-white/5 transition-all duration-300 border border-transparent hover:border-white/10 group"
               >
-                <ChevronLeft className="w-4 h-4 text-gray-400 group-hover:text-white" />
+                <ChevronLeft className="w-5 h-5 text-gray-500 group-hover:text-white" />
               </button>
             </>
           ) : (
             <>
-              <Link href="/dashboard" className="flex items-center justify-center" onClick={handleNavClick}>
-                <div className="w-10 h-10 bg-gradient-to-br from-[#4A6FA5] to-[#5B7AB5] rounded-xl flex items-center justify-center shadow-lg shadow-[#4A6FA5]/30 hover:scale-110 transition-all duration-300">
-                  <Cloud className="w-5 h-5 text-white" strokeWidth={1.5} />
+              <Link href="/dashboard" className="flex items-center justify-center relative group" onClick={handleNavClick}>
+                <div className="absolute -inset-1 bg-gradient-to-br from-[#4A6FA5] to-[#5B7AB5] rounded-xl blur-sm opacity-0 group-hover:opacity-70 transition duration-500"></div>
+                <div className="relative w-11 h-11 bg-gradient-to-br from-[#1A2A4A] to-[#0F1F2F] rounded-xl flex items-center justify-center border border-white/10 group-hover:scale-110 transition-all duration-500">
+                  <Cloud className="w-6 h-6 text-[#5B7AB5]" strokeWidth={2} />
                 </div>
               </Link>
               <button
                 onClick={toggleSidebar}
-                className="hidden md:block p-1.5 rounded-lg bg-[#0F1F2F] border border-white/10 hover:bg-white/10 transition group absolute -right-3 top-7"
+                className="hidden md:flex p-1.5 rounded-full bg-[#5B7AB5] text-white hover:scale-110 transition-all duration-300 absolute -right-3 top-9 z-[60] shadow-lg shadow-[#5B7AB5]/40"
               >
-                <ChevronRight className="w-4 h-4 text-gray-400 group-hover:text-white" />
+                <ChevronRight className="w-4 h-4" />
               </button>
             </>
           )}
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 px-3 py-4 space-y-1 overflow-y-auto">
+        <nav className="flex-1 px-4 py-8 space-y-2 overflow-y-auto custom-scrollbar">
+          {!sidebarCollapsed && (
+            <p className="text-[10px] font-bold text-gray-500 tracking-[0.2em] px-4 mb-4 uppercase opacity-50">Main Menu</p>
+          )}
           {navItems.map((item) => {
             const isActive = pathname === item.href;
             const Icon = item.icon;
@@ -222,21 +247,24 @@ export default function DashboardLayout({
               <Link key={item.href} href={item.href} onClick={handleNavClick}>
                 <div
                   className={`
-                    flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-3'} px-4 py-3 rounded-lg transition-all duration-200
+                    group relative flex items-center ${sidebarCollapsed ? 'justify-center' : 'gap-4'} px-4 py-3.5 rounded-xl transition-all duration-300
                     ${
                       isActive
-                        ? "bg-gradient-to-r from-[#2D3A5E] to-[#4A6FA5] text-white shadow-lg shadow-[#2D3A5E]/30"
-                        : "text-gray-400 hover:text-white hover:bg-white/5"
+                        ? "bg-[#4A6FA5]/10 text-white border border-[#4A6FA5]/20 shadow-[0_0_20px_rgba(74,111,165,0.1)]"
+                        : "text-gray-400 hover:text-white hover:bg-white/[0.03] border border-transparent"
                     }
                   `}
                   title={sidebarCollapsed ? item.name : undefined}
                 >
-                  <Icon size={18} className={isActive ? "text-white" : "text-gray-500"} />
+                  {isActive && (
+                    <div className="absolute left-0 w-1 h-6 bg-[#5B7AB5] rounded-r-full"></div>
+                  )}
+                  <Icon size={20} className={`transition-transform duration-300 ${isActive ? "text-[#5B7AB5] scale-110" : "text-gray-500 group-hover:scale-110 group-hover:text-gray-300"}`} />
                   {!sidebarCollapsed && (
                     <>
-                      <span className="text-sm font-medium">{item.name}</span>
+                      <span className={`text-sm font-semibold transition-all duration-300 ${isActive ? "translate-x-1" : "group-hover:translate-x-1"}`}>{item.name}</span>
                       {isActive && (
-                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-white animate-pulse"></div>
+                        <div className="ml-auto w-1.5 h-1.5 rounded-full bg-[#5B7AB5] shadow-[0_0_10px_#5B7AB5]"></div>
                       )}
                     </>
                   )}
@@ -246,30 +274,51 @@ export default function DashboardLayout({
           })}
         </nav>
 
-        {/* Sidebar Footer */}
-        {!sidebarCollapsed && (
-          <div className="p-4 border-t border-white/10 bg-[#0F1F2F]">
-            <div className="bg-white/5 rounded-lg p-3 hover:bg-white/10 transition-all duration-300">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#2D3A5E] to-[#4A6FA5] flex items-center justify-center ring-2 ring-white/20">
-                  <span className="text-sm font-medium text-white">{userInitials}</span>
+        {/* Sidebar Footer - User Profile */}
+        <div className={`p-4 border-t border-white/5 bg-[#0F1F2F]/50 backdrop-blur-md`}>
+          {!sidebarCollapsed ? (
+            <div className="bg-gradient-to-br from-white/[0.03] to-transparent border border-white/5 rounded-2xl p-4 hover:border-white/10 transition-all duration-500 group">
+              <div className="flex items-center gap-3.5">
+                <div className="relative">
+                  <div className="absolute -inset-0.5 bg-gradient-to-br from-[#4A6FA5] to-[#5B7AB5] rounded-full blur-[2px] opacity-50 group-hover:opacity-100 transition duration-500"></div>
+                  <div className="relative w-11 h-11 rounded-full bg-[#0A1929] flex items-center justify-center border border-white/10">
+                    <span className="text-sm font-black text-white tracking-tighter">{userInitials}</span>
+                  </div>
+                  <div className="absolute bottom-0 right-0 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0F1F2F] shadow-sm"></div>
                 </div>
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-semibold text-white truncate">{userName || "User"}</p>
-                  <p className="text-xs text-gray-400 truncate">{userEmail || "user@example.com"}</p>
+                  <p className="text-sm font-bold text-white truncate leading-none mb-1">{userName || "Administrator"}</p>
+                  <p className="text-[10px] text-gray-500 truncate font-medium uppercase tracking-wider">{userEmail || "Cloud Expert"}</p>
                 </div>
                 <button
                   onClick={handleLogout}
-                  className="p-2 hover:bg-white/10 rounded-lg transition group"
+                  className="p-2.5 bg-white/5 hover:bg-red-500/10 rounded-xl border border-white/5 hover:border-red-500/20 transition-all duration-300 group/logout"
                   title="Logout"
                 >
-                  <LogOut size={16} className="text-gray-400 group-hover:text-white" />
+                  <LogOut size={16} className="text-gray-500 group-hover/logout:text-red-400" />
                 </button>
               </div>
             </div>
-          </div>
-        )}
+          ) : (
+            <div className="flex flex-col items-center gap-4">
+              <button
+                onClick={handleLogout}
+                className="p-3 bg-white/5 hover:bg-red-500/10 rounded-xl border border-white/5 hover:border-red-500/20 transition-all duration-300 group/logout"
+                title="Logout"
+              >
+                <LogOut size={18} className="text-gray-500 group-hover/logout:text-red-400" />
+              </button>
+              <div className="relative">
+                <div className="w-10 h-10 rounded-full bg-gradient-to-br from-[#4A6FA5] to-[#5B7AB5] flex items-center justify-center ring-2 ring-white/10 group-hover:ring-white/20 transition-all">
+                  <span className="text-xs font-black text-white">{userInitials}</span>
+                </div>
+                <div className="absolute -top-1 -right-1 w-3 h-3 bg-emerald-500 rounded-full border-2 border-[#0F1F2F]"></div>
+              </div>
+            </div>
+          )}
+        </div>
       </aside>
+
 
       {/* ================= MAIN CONTENT ================= */}
       <div className="flex-1 flex flex-col h-screen overflow-hidden">

@@ -10,8 +10,11 @@ async function request(endpoint: string, method = "GET") {
       ? localStorage.getItem("token")
       : null;
 
+  console.log(`Requesting: ${API}${endpoint}`);
   const res = await fetch(`${API}${endpoint}`, {
     method,
+    mode: "cors",
+    credentials: "omit",
     headers: {
       "Content-Type": "application/json",
       ...(token && { Authorization: `Bearer ${token}` }),
@@ -30,11 +33,32 @@ async function request(endpoint: string, method = "GET") {
 }
 
 /* =====================================================
-   🔥 DASHBOARD (MAIN)
+   DASHBOARD (MAIN)
 ===================================================== */
 
 export const fetchOverview = () =>
   request("/dashboard/overview");
+
+export const fetchCostTrend = (days: number = 30) =>
+  request(`/dashboard/cost/trend?days=${days}`);
+
+
+
+export const fetchOptimization = () =>
+  request("/dashboard/optimization");
+
+export const fetchOptimizationSummary = () =>
+  request("/dashboard/optimization/summary");
+
+export const fetchSustainability = () =>
+  request("/dashboard/sustainability");
+
+export const fetchForecast = () =>
+  request("/dashboard/forecast");
+
+export const fetchMe = (token: string) =>
+  request(`/auth/me?token=${token}`);
+
 
 /* =====================================================
    🔥 EC2
@@ -100,8 +124,9 @@ export const fetchRiskTrend = () =>
 
 
 /* =====================================================
-   🔥 INFRASTRUCTURE (COMBINED)
+   INFRASTRUCTURE (COMBINED)
 ===================================================== */
+
 
 export const fetchInfrastructure = async () => {
   const [ec2, s3, rds, lambda] = await Promise.all([

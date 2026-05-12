@@ -28,7 +28,9 @@ import {
   Info,
   Download,
   RefreshCw,
+  Activity,
 } from "lucide-react";
+
 
 import CostChart from "@/components/CostChart";
 import ForecastPanel from "@/components/ForecastPanel";
@@ -54,11 +56,13 @@ export default function CostAnalytics() {
     async function loadData() {
       setIsLoading(true);
       try {
+        const days = parseInt(selectedPeriod.replace("d", ""));
         const [costTrend, forecast, overview] = await Promise.all([
-          fetchCostTrend(),
+          fetchCostTrend(days),
           fetchForecast(),
           fetchOverview()
         ]);
+
 
         const ec2Cost = overview.ec2.total_cost || 0;
         const s3Cost = overview.s3.total_cost || 0;
@@ -141,9 +145,11 @@ export default function CostAnalytics() {
         );
 
         setData({
-          costTrend,
+          costTrend: { trend: costTrend },
           forecast,
           overview,
+
+
           totalCost,
           services,
           highestService,
@@ -152,6 +158,7 @@ export default function CostAnalytics() {
           savings,
           efficiencyScore
         });
+
 
         setLastUpdated(new Date());
       } catch (error) {
@@ -162,7 +169,24 @@ export default function CostAnalytics() {
     }
 
     loadData();
-  }, []);
+  }, [selectedPeriod]); // Reload or re-filter when period changes
+
+  const handleDownload = () => {
+    if (!data) return;
+    const headers = ["Date", "Amount"];
+    const rows = (data.costTrend?.trend || []).map((t: any) => `${t.date},${t.amount}`);
+    const csvContent = [headers.join(","), ...rows].join("\n");
+    const blob = new Blob([csvContent], { type: "text/csv" });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.setAttribute("hidden", "");
+    a.setAttribute("href", url);
+    a.setAttribute("download", `cost_report_${selectedPeriod}.csv`);
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+  };
+
 
   const refreshData = () => {
     window.location.reload();
@@ -296,6 +320,8 @@ export default function CostAnalytics() {
             ))}
           </div>
 
+
+
           <button
             onClick={refreshData}
             className="p-2 bg-slate-900/50 backdrop-blur-xl rounded-xl border border-slate-800 hover:border-blue-500/50 transition-all"
@@ -303,9 +329,14 @@ export default function CostAnalytics() {
             <RefreshCw className="w-5 h-5 text-gray-400" />
           </button>
 
-          <button className="p-2 bg-slate-900/50 backdrop-blur-xl rounded-xl border border-slate-800 hover:border-blue-500/50 transition-all">
-            <Download className="w-5 h-5 text-gray-400" />
+          <button 
+            onClick={handleDownload}
+            className="p-2 bg-slate-900/50 backdrop-blur-xl rounded-xl border border-slate-800 hover:border-blue-500/50 transition-all group"
+            title="Download Report"
+          >
+            <Download className="w-5 h-5 text-gray-400 group-hover:text-blue-400" />
           </button>
+
         </div>
       </div>
 
@@ -500,10 +531,11 @@ export default function CostAnalytics() {
           <div className="absolute -inset-0.5 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl blur opacity-20 group-hover:opacity-30 transition duration-1000"></div>
           <div className="relative bg-slate-900/90 backdrop-blur-xl rounded-2xl p-6 border border-slate-800">
             <div className="flex items-center gap-3 mb-4">
-              <div className="p-2 bg-purple-500/10 rounded-xl">
-                <Sparkles className="w-5 h-5 text-purple-400" />
+              <div className="p-2 bg-blue-500/10 rounded-xl">
+                <Activity className="w-5 h-5 text-blue-400" />
               </div>
-              <h2 className="text-lg font-semibold text-white">AI Insights</h2>
+              <h2 className="text-lg font-semibold text-white">Operations Insights</h2>
+
             </div>
             <div className="space-y-4">
               {data.insights.length === 0 ? (
