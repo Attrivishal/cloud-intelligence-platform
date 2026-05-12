@@ -276,6 +276,54 @@ def get_dashboard_overview(db: Session):
         ]
     }
 
+    # ================= CLOUD INSIGHTS (REAL DATA) =================
+
+    insights = []
+    
+    # EC2 Insights
+    if ec2_data["underutilized"] > 0:
+        savings = ec2_data["underutilized"] * 15.50
+        insights.append({
+            "type": "warning",
+            "message": f"Found {ec2_data['underutilized']} underutilized EC2 instances",
+            "action": "Resize to t3.micro or use Spot Instances",
+            "impact": f"Potential savings: ${savings:,.2f}/month"
+        })
+    
+    # RDS Insights
+    if rds_data["low_storage"] > 0:
+        insights.append({
+            "type": "danger",
+            "message": f"Critical: {rds_data['low_storage']} RDS databases reaching storage limit",
+            "action": "Enable storage autoscaling",
+            "impact": "Prevent potential database downtime"
+        })
+    
+    # Lambda Insights
+    if lambda_data["unused_functions"] > 0:
+        insights.append({
+            "type": "info",
+            "message": f"{lambda_data['unused_functions']} Lambda functions have zero invocations",
+            "action": "Archive and delete unused code",
+            "impact": "Reduces infrastructure complexity"
+        })
+        
+    # Cost Insight
+    if cost_change_percent > 10:
+        insights.append({
+            "type": "danger",
+            "message": f"Unexpected {cost_change_percent}% cost spike detected",
+            "action": "Review CloudWatch billing alerts",
+            "impact": "Immediate budget intervention required"
+        })
+    elif cost_change_percent < -5:
+        insights.append({
+            "type": "success",
+            "message": "Cloud spend optimized successfully",
+            "action": "Continue current scaling policies",
+            "impact": f"Budget efficiency improved by {abs(cost_change_percent)}%"
+        })
+
     # ================= FINAL RESPONSE =================
     return {
         "cost": cost_summary,
@@ -285,10 +333,12 @@ def get_dashboard_overview(db: Session):
         "optimization": optimization_summary,
         "sustainability": sustainability_report,
         "cloud_health": cloud_health,
+        "insights": insights,
 
-        # 🔥 NEW SERVICE SPECIFIC DETAILS
+        # SERVICE SPECIFIC KEYS
         "ec2": ec2_data,
         "s3": s3_data,
         "rds": rds_data,
         "lambda": lambda_data
     }
+

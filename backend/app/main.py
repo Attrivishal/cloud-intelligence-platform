@@ -56,16 +56,38 @@ app = FastAPI()
 # ============================
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+
 # ============================
-# AUTH ROUTES
+# ROUTES
 # ============================
+from app.routes.auth import router as auth_router
+from app.routes.dashboard import router as dashboard_router
+from app.routes.forecast import router as forecast_router
+from app.routes.aws.ec2 import router as ec2_router
+from app.routes.aws.s3 import router as s3_router
+from app.routes.aws.rds import router as rds_router
+from app.routes.aws.lambda_route import router as lambda_router
+from app.routes.aws.risk import router as risk_router
+
 app.include_router(auth_router)
+app.include_router(dashboard_router)
+# app.include_router(forecast_router) # Dashboard router already has a forecast route
+app.include_router(ec2_router)
+app.include_router(s3_router)
+app.include_router(rds_router)
+app.include_router(lambda_router)
+app.include_router(risk_router)
 
 
 # ============================
@@ -75,97 +97,3 @@ app.include_router(auth_router)
 def health():
     return {"status": "healthy"}
 
-
-# ============================
-# TEST ROUTES (for debugging)
-# ============================
-@app.get("/test-ec2")
-def test_ec2():
-    return get_ec2_instances()
-
-
-@app.get("/test-cpu/{instance_id}")
-def test_cpu(instance_id: str):
-    return {
-        "instance_id": instance_id,
-        "cpu": get_instance_cpu_utilization(instance_id)
-    }
-
-
-@app.get("/test-s3")
-def test_s3():
-    return get_s3_buckets()
-
-
-@app.get("/test-rds")
-def test_rds():
-    return get_rds_instances()
-
-
-@app.get("/test-lambda")
-def test_lambda():
-    return get_lambda_functions()
-
-
-# ============================
-# DASHBOARD ROUTES
-# ============================
-
-# 🔥 MAIN OVERVIEW (ALL SERVICES)
-@app.get("/dashboard/overview")
-def overview(db: Session = Depends(get_db)):
-    return {
-        "ec2": get_ec2_dashboard(db),
-        "s3": get_s3_dashboard(db),
-        "rds": get_rds_dashboard(db),
-        "lambda": get_lambda_dashboard(db)
-    }
-
-
-# 🔹 RDS ONLY (optional detailed page)
-@app.get("/dashboard/rds")
-def rds_dashboard(db: Session = Depends(get_db)):
-    return get_rds_dashboard(db)
-
-
-# ============================
-# SYNC ROUTES (CORE LOGIC)
-# ============================
-
-# 🔹 EC2 SYNC
-@app.post("/sync-ec2")
-def sync_ec2(db: Session = Depends(get_db)):
-    data = get_ec2_instances()
-    save_ec2_instances(db, data)
-    return {"message": "EC2 instances synced successfully"}
-
-
-# 🔹 CPU SYNC
-@app.post("/sync-cpu")
-def sync_cpu(db: Session = Depends(get_db)):
-    sync_cpu_metrics(db)
-    return {"message": "CPU metrics synced successfully"}
-
-
-# 🔹 S3 SYNC
-@app.post("/sync-s3")
-def sync_s3(db: Session = Depends(get_db)):
-    data = get_s3_buckets()
-    save_s3_buckets(db, data)
-    return {"message": "S3 synced successfully"}
-
-
-# 🔹 RDS SYNC
-@app.post("/sync-rds")
-def sync_rds(db: Session = Depends(get_db)):
-    data = get_rds_instances()
-    save_rds_instances(db, data)
-    return {"message": "RDS synced successfully"}
-
-
-# 🔹 LAMBDA SYNC
-@app.post("/sync-lambda")
-def sync_lambda(db: Session = Depends(get_db)):
-    data = get_lambda_functions()
-    save_lambda_functions(db, data)
-    return {"message": "Lambda synced successfully"}

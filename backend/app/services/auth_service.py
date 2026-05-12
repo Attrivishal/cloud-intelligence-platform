@@ -1,8 +1,6 @@
 from passlib.context import CryptContext
-from jose import jwt
+from jose import jwt, JWTError
 from datetime import datetime, timedelta
-from sqlalchemy.orm import Session
-from app.models.user import User
 from sqlalchemy.orm import Session
 from app.models.user import User
 
@@ -17,12 +15,17 @@ def hash_password(password: str):
 def verify_password(plain, hashed):
     return pwd_context.verify(plain, hashed)
 
-def create_token(email: str):
-    payload = {
-        "sub": email,
-        "exp": datetime.utcnow() + timedelta(hours=2)
-    }
+def create_token(data: dict):
+    payload = data.copy()
+    payload.update({"exp": datetime.utcnow() + timedelta(hours=2)})
     return jwt.encode(payload, SECRET_KEY, algorithm=ALGORITHM)
+
+def decode_token(token: str):
+    try:
+        payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
+        return payload
+    except JWTError:
+        return None
 
 def authenticate_user(db: Session, email: str, password: str):
     user = db.query(User).filter(User.email == email).first()

@@ -1,2 +1,37 @@
+# Environments
 .env
+.env.local
+.env.*.local
+**/.env
+**/.env.*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
 venv/
+env/
+.venv/
+.env/
+
+# Node.js
+node_modules/
+dist/
+.next/
+out/
+build/
+.npm
+.eslintcache
+
+# Docker
+.dockerignore
+# (Note: keeping Dockerfile is usually fine for repo)
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs
+.vscode/
+.idea/
+.gemini/

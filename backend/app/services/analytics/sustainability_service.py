@@ -21,6 +21,7 @@ def get_sustainability_report(db: Session):
 
     total_emission = 0
     running_instances = 0
+    total_instances = len(instances)
 
     for instance in instances:
         if not instance.state or instance.state.lower() != "running":
@@ -37,23 +38,28 @@ def get_sustainability_report(db: Session):
         emission = avg_cpu * EMISSION_FACTOR
         total_emission += emission
 
+    # Logic for zero running instances
     if running_instances == 0:
         sustainability_score = 100
+        rating = "Optimal"
+        if total_instances > 0:
+            recommendation = f"Great job! All {total_instances} instances are currently stopped, saving approximately {total_instances * 0.05:.2f}kg of CO2 daily."
+        else:
+            recommendation = "No infrastructure detected. Your cloud footprint is currently zero."
     else:
         sustainability_score = max(
             0,
             round(100 - (total_emission * 10000), 2)
         )
-
-    if sustainability_score > 80:
-        rating = "Excellent"
-        recommendation = "Infrastructure is energy efficient"
-    elif sustainability_score > 60:
-        rating = "Good"
-        recommendation = "Minor optimization can improve sustainability"
-    else:
-        rating = "Needs Improvement"
-        recommendation = "Consider reducing idle or oversized instances"
+        if sustainability_score > 80:
+            rating = "Excellent"
+            recommendation = "Infrastructure is energy efficient."
+        elif sustainability_score > 60:
+            rating = "Good"
+            recommendation = "Minor optimization can improve sustainability."
+        else:
+            rating = "Needs Improvement"
+            recommendation = "Consider reducing idle or oversized instances."
 
     return {
         "total_running_instances": running_instances,
@@ -63,3 +69,4 @@ def get_sustainability_report(db: Session):
         "recommendation": recommendation,
         "green_efficiency_level": get_green_efficiency_level(sustainability_score)
     }
+

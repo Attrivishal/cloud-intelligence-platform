@@ -26,8 +26,10 @@ def save_daily_cost(db: Session, cost_data):
     db.commit()
 
 
-def get_cost_trend(db: Session):
-    costs = db.query(DailyCost).order_by(DailyCost.date).all()
+def get_cost_trend(db: Session, days: int = 30):
+    # Fetch limited records in descending order to get latest 'days', then sort chronologically for display
+    costs = db.query(DailyCost).order_by(DailyCost.date.desc()).limit(days).all()
+    costs = sorted(costs, key=lambda c: c.date)
 
     return [
         {
@@ -36,6 +38,7 @@ def get_cost_trend(db: Session):
         }
         for cost in costs
     ]
+
 
 
 def get_cost_summary(db: Session):

@@ -2,87 +2,85 @@ from sqlalchemy.orm import Session
 from app.models.instance import EC2Instance
 from app.models.cpu import CPUMetric
 from app.models.cost import DailyCost
+from app.models.s3_bucket import S3Bucket
+from app.models.rds_instance import RDSInstance
+from app.models.lambda_model import LambdaFunction
 
-
-# IMPORTANT: CPU is percentage (0–100)
 CPU_IDLE_THRESHOLD = 10  # 10% CPU
 
-
 def get_savings_priority(savings_amount: float):
-    if savings_amount > 100:
-        return "High"
-    elif savings_amount > 20:
-        return "Medium"
+    if savings_amount > 100: return "High"
+    if savings_amount > 20: return "Medium"
     return "Low"
 
-
 def get_optimization_report(db: Session):
-    instances = db.query(EC2Instance).all()
-    cpu_metrics = db.query(CPUMetric).all()
-    cost_data = db.query(DailyCost).all()
-
+    # This returns detailed items for the report
     report = []
-
-    if not cost_data:
-        average_daily_cost = 0
-    else:
-        average_daily_cost = sum(c.amount for c in cost_data) / len(cost_data)
-
-    for instance in instances:
-
-        instance_cpu = [
-            m.average_cpu for m in cpu_metrics
-            if m.instance_id == instance.instance_id
-        ]
-
-        avg_cpu = sum(instance_cpu) / len(instance_cpu) if instance_cpu else 0
-
-        if avg_cpu < CPU_IDLE_THRESHOLD:
-            status = "Underutilized"
-            recommendation = "Consider stopping or resizing this instance"
-            estimated_monthly_savings = abs(average_daily_cost) * 30
-        else:
-            status = "Healthy"
-            recommendation = "No action required"
-            estimated_monthly_savings = 0
-
-        report.append({
-            "instance_id": instance.instance_id,
-            "instance_type": instance.instance_type,
-            "state": instance.state,
-            "average_cpu": round(avg_cpu, 4),
-            "status": status,
-            "recommendation": recommendation,
-            "estimated_monthly_savings": round(estimated_monthly_savings, 6)
-        })
+    
+    # 1. EC2 Optimizations
+    instances = db.query(EC2Instance).all()
+    for inst in instances:
+        if inst.risk == "UNDERUTILIZED ⚠️" or (inst.average_cpu and inst.average_cpu < 10):
+            report.append({
+                "instance_id": inst.instance_id,
+                "instance_type": inst.instance_type,
+                "state": inst.state,
+                "average_cpu": round(inst.average_cpu or 0, 2),
+                "status": "Underutilized",
+                "recommendation": "Resize to t3.micro or schedule shutdown",
+                "estimated_monthly_savings": 12.50
+            })
+            
+    # 2. RDS Optimizations
+    rds_insts = db.query(RDSInstance).all()
+    for rds in rds_insts:
+        if rds.risk == "LOW STORAGE ⚠️":
+            report.append({
+                "instance_id": rds.db_identifier,
+                "instance_type": rds.instance_class,
+                "state": rds.status,
+                "average_cpu": 0, # RDS CPU not tracked here yet
+                "status": "Low Storage Risk",
+                "recommendation": "Enable Storage Autoscaling",
+                "estimated_monthly_savings": 0.0
+            })
+            
+    # 3. Lambda Optimizations
+    lambdas = db.query(LambdaFunction).all()
+    for fn in lambdas:
+        if fn.risk == "UNUSED ⚠️":
+            report.append({
+                "instance_id": fn.name,
+                "instance_type": "Lambda",
+                "state": "Active",
+                "average_cpu": 0,
+                "status": "Unused",
+                "recommendation": "Archive and delete function",
+                "estimated_monthly_savings": 2.00
+            })
 
     return report
 
-
 def get_optimization_summary(db: Session):
     report = get_optimization_report(db)
-
-    total_instances = len(report)
-    underutilized_instances = len(
-        [r for r in report if r["status"] == "Underutilized"]
-    )
-
-    total_savings = sum(
-        r["estimated_monthly_savings"] for r in report
-    )
-
-    if total_instances == 0:
-        optimization_score = 100
+    
+    total_savings = sum(r["estimated_monthly_savings"] for r in report)
+    underutilized = len([r for r in report if r["status"] == "Underutilized"])
+    
+    # Get counts for score calculation
+    total_ec2 = db.query(EC2Instance).count()
+    total_lambda = db.query(LambdaFunction).count()
+    total_resources = total_ec2 + total_lambda
+    
+    if total_resources == 0:
+        score = 100
     else:
-        healthy_ratio = (total_instances - underutilized_instances) / total_instances
-        optimization_score = round(healthy_ratio * 100, 2)
-
-    savings_priority_level = get_savings_priority(total_savings)
-
+        score = max(50, 100 - (len(report) * 5))
+        
     return {
-        "total_instances": total_instances,
-        "underutilized_instances": underutilized_instances,
-        "optimization_score": optimization_score,
-        "total_potential_monthly_savings": round(total_savings, 6),
-        "savings_priority_level": savings_priority_level
+        "total_instances": total_ec2,
+        "underutilized_instances": underutilized,
+        "optimization_score": score,
+        "total_potential_monthly_savings": round(total_savings, 2),
+        "savings_priority_level": get_savings_priority(total_savings)
     }

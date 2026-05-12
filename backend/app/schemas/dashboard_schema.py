@@ -203,6 +203,16 @@ class LambdaSchema(BaseModel):
 
 
 # =====================================================
+# AI INSIGHTS
+# =====================================================
+
+class AIInsightItem(BaseModel):
+    type: str  # warning, danger, success, info
+    message: str
+    action: str
+    impact: str
+
+# =====================================================
 # DASHBOARD OVERVIEW (MAIN RESPONSE)
 # =====================================================
 
@@ -214,12 +224,14 @@ class DashboardOverviewSchema(BaseModel):
     optimization: OptimizationSummarySchema
     sustainability: SustainabilityReportSchema
     cloud_health: CloudHealthSchema
+    insights: List[AIInsightItem] = []
     
     # 🔥 NEW SERVICE SPECIFIC KEYS
     ec2: EC2Schema
     s3: S3Schema
     rds: RDSSchema
     lambda_details: LambdaSchema = Field(alias="lambda")
+
 
 
 # =====================================================

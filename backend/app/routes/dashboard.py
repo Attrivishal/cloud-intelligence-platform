@@ -59,8 +59,9 @@ def dashboard_overview(db: Session = Depends(get_db)):
 # =====================================================
 
 @router.get("/cost/trend", response_model=CostTrendSchema)
-def dashboard_cost_trend(db: Session = Depends(get_db)):
-    return get_cost_trend(db)
+def dashboard_cost_trend(days: int = 30, db: Session = Depends(get_db)):
+    return get_cost_trend(db, days=days)
+
 
 
 @router.get("/cost/summary", response_model=CostSummarySchema)
