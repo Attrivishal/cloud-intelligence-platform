@@ -5,6 +5,7 @@ export const metadata: Metadata = {
   description: "CloudIntel began as a capstone initiative to build a transparent, developer-focused FinOps tool. Our vision is to demystify complex billing and provid...",
 };
 
+
 export default function Layout({ children }: { children: React.ReactNode }) {
   return <>{children}</>;
 }
